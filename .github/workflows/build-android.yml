@@ -5,7 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-  workflow_dispatch:  # Allows manual trigger from GitHub UI
+  workflow_dispatch:
 
 env:
   GODOT_VERSION: 4.2.2
@@ -14,30 +14,35 @@ env:
 jobs:
   build-android:
     runs-on: ubuntu-latest
-    container:
-      image: barichello/godot-ci:4.2.2
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
-          lfs: true
+          distribution: 'temurin'
+          java-version: '17'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Create export directories
+      - name: Download Godot
         run: |
-          mkdir -v -p ~/.local/share/godot/export_templates/
-          mkdir -v -p ~/.config/godot/
-          mkdir -v -p build/android
+          wget -q https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip
+          unzip -q Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip
+          mv Godot_v${GODOT_VERSION}-stable_linux.x86_64 /usr/local/bin/godot
+          chmod +x /usr/local/bin/godot
 
-      - name: Download Godot Export Templates
+      - name: Download Export Templates
         run: |
+          mkdir -p ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
           cd ~/.local/share/godot/export_templates/
           wget -q https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz
           unzip -q Godot_v${GODOT_VERSION}-stable_export_templates.tpz
-          mv templates ${GODOT_VERSION}.stable
+          mv templates/* ${GODOT_VERSION}.stable/
+          ls -la ${GODOT_VERSION}.stable/
 
       - name: Setup debug keystore
         run: |
@@ -47,60 +52,63 @@ jobs:
             -storepass android -dname "CN=Android Debug,O=Android,C=US" \
             -validity 9999 -deststoretype pkcs12
 
-      - name: Configure Godot editor settings
+      - name: Configure Godot Editor Settings
         run: |
           mkdir -p ~/.config/godot
-          cat > ~/.config/godot/editor_settings-4.tres << 'EOF'
+          cat > ~/.config/godot/editor_settings-4.tres << EOF
           [gd_resource type="EditorSettings" format=3]
-
           [resource]
-          export/android/android_sdk_path = "/usr/local/lib/android/sdk"
-          export/android/debug_keystore = "/github/home/.android/debug.keystore"
+          export/android/android_sdk_path = "$ANDROID_HOME"
+          export/android/debug_keystore = "$HOME/.android/debug.keystore"
           export/android/debug_keystore_user = "androiddebugkey"
           export/android/debug_keystore_pass = "android"
           EOF
+          cat ~/.config/godot/editor_settings-4.tres
 
-      - name: Import project
+      - name: Create build directory
+        run: mkdir -p build/android
+
+      - name: Import Godot project
         run: |
-          godot --headless --import --quit || true
-          sleep 2
+          cd $GITHUB_WORKSPACE
+          timeout 60 godot --headless --editor --quit || true
+          echo "Import complete"
 
-      - name: Build Android APK (Debug)
+      - name: List project files
         run: |
-          godot --headless --export-debug "Android" build/android/${EXPORT_NAME}-debug.apk || true
+          echo "=== Project root ==="
+          ls -la
+          echo "=== .godot folder ==="
+          ls -la .godot/ 2>/dev/null || echo "No .godot folder yet"
 
-      - name: Build Android APK (Release)
+      - name: Export Android APK
         run: |
-          godot --headless --export-release "Android" build/android/${EXPORT_NAME}-release.apk || true
-        continue-on-error: true
+          cd $GITHUB_WORKSPACE
+          godot --headless --export-debug "Android" build/android/${EXPORT_NAME}.apk 2>&1 | tee export.log || true
+          echo "=== Export log ==="
+          cat export.log
+          echo "=== Build output ==="
+          ls -la build/android/ || echo "Build folder empty"
 
-      - name: List build outputs
+      - name: Check for APK and upload
         run: |
-          echo "=== Build directory contents ==="
-          ls -la build/android/ || echo "No build directory"
-          echo "=== Checking for APK files ==="
-          find . -name "*.apk" -type f 2>/dev/null || echo "No APK files found"
+          if [ -f "build/android/${EXPORT_NAME}.apk" ]; then
+            echo "APK built successfully!"
+            ls -lh build/android/
+          else
+            echo "APK not found. Checking for errors..."
+            find . -name "*.apk" 2>/dev/null || echo "No APK files anywhere"
+            echo "=== Checking Godot project ==="
+            cat project.godot | head -30
+            echo "=== Checking export presets ==="
+            cat export_presets.cfg | head -50
+            exit 1
+          fi
 
-      - name: Upload Debug APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: android-debug-apk
-          path: build/android/${{ env.EXPORT_NAME }}-debug.apk
-          if-no-files-found: warn
-          retention-days: 30
-
-      - name: Upload Release APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-release-apk
-          path: build/android/${{ env.EXPORT_NAME }}-release.apk
-          if-no-files-found: ignore
-          retention-days: 30
-
-      - name: Upload all APKs as single artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: zero-hour-apks
+          name: zero-hour-android
           path: build/android/*.apk
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 30
