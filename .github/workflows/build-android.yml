@@ -105,10 +105,42 @@ jobs:
             exit 1
           fi
 
-      - name: Upload APK
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: zero-hour-android
           path: build/android/*.apk
           if-no-files-found: error
           retention-days: 30
+
+      - name: Get version from project
+        id: version
+        run: |
+          VERSION=$(grep 'config/version=' project.godot | cut -d'"' -f2)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Found version: $VERSION"
+
+      - name: Create Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: ZERO-HOUR v${{ steps.version.outputs.version }}
+          body: |
+            ## ZERO-HOUR v${{ steps.version.outputs.version }}
+
+            Automated build from commit ${{ github.sha }}
+
+            ### Installation
+            1. Download the APK below
+            2. Enable "Install from unknown sources" in Android settings
+            3. Open the APK to install
+
+            ### Changes
+            See commit history for details.
+          files: build/android/*.apk
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

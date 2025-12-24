@@ -10,7 +10,7 @@ extends Control
 @onready var status_label: Label = $VBoxContainer/StatusLabel
 
 # Current version - update this with each release
-const CURRENT_VERSION: String = "0.2.0"
+const CURRENT_VERSION: String = "0.3.0"
 
 # GitHub repo info (public, no auth needed)
 const GITHUB_REPO: String = "Jehovah-witnesses-here/Zero-hour-"
