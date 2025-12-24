@@ -11,6 +11,9 @@ env:
   GODOT_VERSION: 4.2.2
   EXPORT_NAME: zero-hour
 
+permissions:
+  contents: write
+
 jobs:
   build-android:
     runs-on: ubuntu-latest
