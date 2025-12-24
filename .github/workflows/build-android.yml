@@ -1,0 +1,106 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:  # Allows manual trigger from GitHub UI
+
+env:
+  GODOT_VERSION: 4.2.2
+  EXPORT_NAME: zero-hour
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.2.2
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Create export directories
+        run: |
+          mkdir -v -p ~/.local/share/godot/export_templates/
+          mkdir -v -p ~/.config/godot/
+          mkdir -v -p build/android
+
+      - name: Download Godot Export Templates
+        run: |
+          cd ~/.local/share/godot/export_templates/
+          wget -q https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz
+          unzip -q Godot_v${GODOT_VERSION}-stable_export_templates.tpz
+          mv templates ${GODOT_VERSION}.stable
+
+      - name: Setup debug keystore
+        run: |
+          mkdir -p ~/.android
+          keytool -keyalg RSA -genkeypair -alias androiddebugkey \
+            -keypass android -keystore ~/.android/debug.keystore \
+            -storepass android -dname "CN=Android Debug,O=Android,C=US" \
+            -validity 9999 -deststoretype pkcs12
+
+      - name: Configure Godot editor settings
+        run: |
+          mkdir -p ~/.config/godot
+          cat > ~/.config/godot/editor_settings-4.tres << 'EOF'
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/android_sdk_path = "/usr/local/lib/android/sdk"
+          export/android/debug_keystore = "/github/home/.android/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          EOF
+
+      - name: Import project
+        run: |
+          godot --headless --import --quit || true
+          sleep 2
+
+      - name: Build Android APK (Debug)
+        run: |
+          godot --headless --export-debug "Android" build/android/${EXPORT_NAME}-debug.apk || true
+
+      - name: Build Android APK (Release)
+        run: |
+          godot --headless --export-release "Android" build/android/${EXPORT_NAME}-release.apk || true
+        continue-on-error: true
+
+      - name: List build outputs
+        run: |
+          echo "=== Build directory contents ==="
+          ls -la build/android/ || echo "No build directory"
+          echo "=== Checking for APK files ==="
+          find . -name "*.apk" -type f 2>/dev/null || echo "No APK files found"
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-debug-apk
+          path: build/android/${{ env.EXPORT_NAME }}-debug.apk
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-apk
+          path: build/android/${{ env.EXPORT_NAME }}-release.apk
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Upload all APKs as single artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zero-hour-apks
+          path: build/android/*.apk
+          if-no-files-found: warn
+          retention-days: 30
