@@ -26,6 +26,7 @@ var player: CharacterBody3D = null
 var building_generator: Node3D = null
 var osm_fetcher: Node = null
 var street_props: Node3D = null
+var rust_map: Node3D = null
 
 # GPS Manager (autoload)
 @onready var gps_manager = get_node_or_null("/root/GPSManager")
@@ -75,6 +76,7 @@ func _find_references() -> void:
 	player = get_tree().get_first_node_in_group("player")
 	building_generator = get_tree().get_first_node_in_group("building_generator")
 	street_props = get_tree().get_first_node_in_group("street_props")
+	rust_map = get_tree().get_first_node_in_group("rust_map")
 
 	var main = get_tree().current_scene
 	if main:
@@ -83,8 +85,8 @@ func _find_references() -> void:
 
 ## Start demo mode with a pre-built test map (no GPS needed)
 func _start_demo_mode() -> void:
-	print("[GameManager] Starting DEMO mode...")
-	loading_started.emit("Loading demo map...")
+	print("[GameManager] Starting DEMO mode - Rust Map...")
+	loading_started.emit("Loading Rust map...")
 
 	current_map_type = MapType.DEMO
 	current_mode = GameMode.SURVIVAL
@@ -93,19 +95,20 @@ func _start_demo_mode() -> void:
 
 	await get_tree().create_timer(0.5).timeout
 
-	# Generate demo buildings
-	if building_generator:
+	# Generate Rust-style map (MW2 oil yard)
+	if rust_map:
+		rust_map.generate_map()
+	elif building_generator:
+		# Fallback to old demo if rust_map not found
 		var demo_buildings = _create_demo_buildings()
 		await building_generator.generate_buildings(demo_buildings)
 		building_generator.create_ground(500.0)
+		if street_props:
+			street_props.generate_demo_props()
 
-	# Generate street props (lamps, trash cans, etc)
-	if street_props:
-		street_props.generate_demo_props()
-
-	# Position player
+	# Position player near the tower
 	if player:
-		player.global_position = Vector3(0, 2, 0)
+		player.global_position = Vector3(10, 2, 10)
 
 	# Done loading
 	is_loading = false
