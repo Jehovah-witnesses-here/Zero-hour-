@@ -38,17 +38,36 @@ var loading_message: String = ""
 var render_distance: float = 200.0
 
 
-func _ready() -> void:
-	print("[GameManager] Starting ZERO-HOUR...")
+var _has_started: bool = false
 
-	# Wait for scene to fully load
+
+func _ready() -> void:
+	print("[GameManager] Initialized")
+
+	# Connect to scene tree changes
+	get_tree().node_added.connect(_on_node_added)
+
+
+func _on_node_added(node: Node) -> void:
+	# Check if main scene was loaded
+	if node.name == "Main" and not _has_started:
+		_try_start_game()
+
+
+func _try_start_game() -> void:
+	if _has_started:
+		return
+
+	# Wait for scene setup
 	await get_tree().process_frame
 	await get_tree().process_frame
 
 	_find_references()
 
-	# Start in demo mode immediately - no waiting for GPS
-	_start_demo_mode()
+	if player and building_generator:
+		_has_started = true
+		print("[GameManager] Starting game...")
+		_start_demo_mode()
 
 
 func _find_references() -> void:

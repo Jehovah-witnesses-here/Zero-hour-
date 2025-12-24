@@ -13,7 +13,7 @@ config_version=5
 config/name="ZERO-HOUR"
 config/description="1:1 Scale Geolocation Zombie FPS"
 config/version="0.1.0"
-run/main_scene="res://scenes/main.tscn"
+run/main_scene="res://scenes/main_menu.tscn"
 config/features=PackedStringArray("4.2", "Mobile")
 config/icon="res://icon.svg"
 
