@@ -1,8 +1,7 @@
 extends CanvasLayer
-## HUD Controller - Updates all HUD elements
-## Shows GPS, FPS, loading state, and debug info
+## HUD Controller - Shows game status, position, and controls
+## Updated to show DEMO MODE properly
 
-# UI element references
 @onready var gps_label: Label = $TopBar/GPSLabel
 @onready var fps_label: Label = $TopBar/FPSLabel
 @onready var loading_panel: Panel = $LoadingPanel
@@ -10,116 +9,80 @@ extends CanvasLayer
 @onready var building_count_label: Label = $DebugPanel/BuildingCountLabel
 @onready var position_label: Label = $DebugPanel/PositionLabel
 
-# References
-var gps_manager: Node = null
 var game_manager: Node = null
 var player: CharacterBody3D = null
 var building_generator: Node3D = null
 
-# Update intervals
-var gps_update_timer: float = 0.0
-var fps_update_timer: float = 0.0
-
-# Settings
-@export var show_debug: bool = true
-@export var gps_update_interval: float = 0.5
-@export var fps_update_interval: float = 0.25
+var fps_timer: float = 0.0
 
 
 func _ready() -> void:
-	# Get autoload singletons
-	gps_manager = get_node_or_null("/root/GPSManager")
 	game_manager = get_node_or_null("/root/GameManager")
 
-	# Wait for scene to load then find references
-	await get_tree().process_frame
+	await get_tree().create_timer(0.5).timeout
 	_find_references()
 	_connect_signals()
 
-	# Show loading initially
-	_show_loading("Initializing...")
+	# Show demo mode immediately
+	if gps_label:
+		gps_label.text = "DEMO MODE"
 
 
 func _find_references() -> void:
 	player = get_tree().get_first_node_in_group("player")
 	building_generator = get_tree().get_first_node_in_group("building_generator")
 
-	# Toggle debug panel
 	if has_node("DebugPanel"):
-		$DebugPanel.visible = show_debug
+		$DebugPanel.visible = true
 
 
 func _connect_signals() -> void:
 	if game_manager:
-		game_manager.loading_started.connect(_show_loading)
-		game_manager.loading_complete.connect(_hide_loading)
-		game_manager.buildings_ready.connect(_on_buildings_ready)
-
-	if gps_manager:
-		gps_manager.location_updated.connect(_on_gps_updated)
-		gps_manager.location_error.connect(_on_gps_error)
+		if game_manager.has_signal("loading_started"):
+			game_manager.loading_started.connect(_on_loading)
+		if game_manager.has_signal("loading_complete"):
+			game_manager.loading_complete.connect(_on_loaded)
+		if game_manager.has_signal("buildings_ready"):
+			game_manager.buildings_ready.connect(_on_buildings_ready)
 
 
 func _process(delta: float) -> void:
-	# Update FPS display
-	fps_update_timer += delta
-	if fps_update_timer >= fps_update_interval:
-		fps_update_timer = 0.0
-		_update_fps()
+	# Update FPS every 0.25 seconds
+	fps_timer += delta
+	if fps_timer >= 0.25:
+		fps_timer = 0.0
+		if fps_label:
+			fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
 
-	# Update position display
-	if show_debug and player:
+	# Update position
+	if player and position_label:
 		var pos = player.global_position
-		if position_label:
-			position_label.text = "Pos: %.1f, %.1f, %.1f" % [pos.x, pos.y, pos.z]
+		position_label.text = "Pos: %.1f, %.1f" % [pos.x, pos.z]
 
 
-func _update_fps() -> void:
-	if fps_label:
-		fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
-
-
-func _on_gps_updated(latitude: float, longitude: float) -> void:
-	if gps_label:
-		gps_label.text = "GPS: %.5f, %.5f" % [latitude, longitude]
-
-
-func _on_gps_error(message: String) -> void:
-	if gps_label:
-		gps_label.text = "GPS: " + message
-
-
-func _show_loading(message: String) -> void:
+func _on_loading(message: String) -> void:
 	if loading_panel:
 		loading_panel.visible = true
 	if loading_label:
 		loading_label.text = message
 
 
-func _hide_loading() -> void:
+func _on_loaded() -> void:
 	if loading_panel:
 		loading_panel.visible = false
+	if gps_label:
+		gps_label.text = "DEMO MODE"
 
 
 func _on_buildings_ready() -> void:
-	_hide_loading()
-	_update_building_count()
+	if loading_panel:
+		loading_panel.visible = false
 
-
-func _update_building_count() -> void:
+	# Update building count
 	if building_count_label and building_generator:
-		var count = building_generator.get_building_count() if building_generator.has_method("get_building_count") else 0
-		building_count_label.text = "Buildings: %d" % count
+		if building_generator.has_method("get_building_count"):
+			building_count_label.text = "Buildings: %d" % building_generator.get_building_count()
 
-
-## Toggle debug panel visibility
-func toggle_debug() -> void:
-	show_debug = !show_debug
-	if has_node("DebugPanel"):
-		$DebugPanel.visible = show_debug
-
-
-## Update GPS label with custom message
-func set_gps_status(message: String) -> void:
+	# Show demo mode
 	if gps_label:
-		gps_label.text = message
+		gps_label.text = "DEMO MODE"
