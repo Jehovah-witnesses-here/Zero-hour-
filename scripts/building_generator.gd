@@ -6,10 +6,10 @@ signal buildings_generated(count: int)
 signal generation_started
 signal generation_complete
 
-# Materials
-var wall_material: StandardMaterial3D
-var roof_material: StandardMaterial3D
-var ground_material: StandardMaterial3D
+# Materials (can be StandardMaterial3D or ShaderMaterial for toon look)
+var wall_material: Material
+var roof_material: Material
+var ground_material: Material
 
 # Container for all buildings
 var _buildings_container: Node3D = null
@@ -25,22 +25,38 @@ func _ready() -> void:
 
 
 func _setup_materials() -> void:
-	# Wall material - DOUBLE SIDED so all walls visible
-	wall_material = StandardMaterial3D.new()
-	wall_material.albedo_color = Color(0.6, 0.58, 0.55)
-	wall_material.roughness = 0.85
-	wall_material.metallic = 0.0
-	wall_material.cull_mode = BaseMaterial3D.CULL_DISABLED  # CRITICAL: Show both sides
+	# Try to load toon shader for Borderlands-style look
+	var toon_shader = load("res://shaders/toon_shader.gdshader")
 
-	# Roof material - also double sided
-	roof_material = StandardMaterial3D.new()
-	roof_material.albedo_color = Color(0.35, 0.32, 0.30)
-	roof_material.roughness = 0.9
-	roof_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	if toon_shader:
+		# Wall material with toon shader
+		wall_material = ShaderMaterial.new()
+		wall_material.shader = toon_shader
+		wall_material.set_shader_parameter("base_color", Vector3(0.6, 0.58, 0.55))
+		wall_material.set_shader_parameter("shadow_color", Vector3(0.25, 0.22, 0.20))
+		wall_material.set_shader_parameter("highlight_color", Vector3(0.85, 0.82, 0.78))
 
-	# Ground material
+		# Roof material with toon shader
+		roof_material = ShaderMaterial.new()
+		roof_material.shader = toon_shader
+		roof_material.set_shader_parameter("base_color", Vector3(0.35, 0.32, 0.30))
+		roof_material.set_shader_parameter("shadow_color", Vector3(0.15, 0.12, 0.10))
+		roof_material.set_shader_parameter("highlight_color", Vector3(0.5, 0.47, 0.43))
+	else:
+		# Fallback to standard materials
+		wall_material = StandardMaterial3D.new()
+		wall_material.albedo_color = Color(0.6, 0.58, 0.55)
+		wall_material.roughness = 0.85
+		wall_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+
+		roof_material = StandardMaterial3D.new()
+		roof_material.albedo_color = Color(0.35, 0.32, 0.30)
+		roof_material.roughness = 0.9
+		roof_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+
+	# Ground material - keep standard for now
 	ground_material = StandardMaterial3D.new()
-	ground_material.albedo_color = Color(0.25, 0.30, 0.20)
+	ground_material.albedo_color = Color(0.2, 0.25, 0.15)
 	ground_material.roughness = 1.0
 
 
