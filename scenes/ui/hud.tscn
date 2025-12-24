@@ -1,0 +1,90 @@
+[gd_scene load_steps=3 format=3 uid="uid://chud00001"]
+
+[ext_resource type="Script" path="res://scripts/ui/touch_controls.gd" id="1_touch"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1"]
+bg_color = Color(0, 0, 0, 0.5)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 10.0
+content_margin_top = 5.0
+content_margin_right = 10.0
+content_margin_bottom = 5.0
+
+[node name="HUD" type="CanvasLayer"]
+layer = 10
+
+[node name="TouchControls" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_touch")
+
+[node name="TopBar" type="HBoxContainer" parent="."]
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 40.0
+grow_horizontal = 2
+
+[node name="GPSLabel" type="Label" parent="TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/normal = SubResource("StyleBoxFlat_1")
+text = "GPS: Waiting..."
+horizontal_alignment = 1
+
+[node name="FPSLabel" type="Label" parent="TopBar"]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_1")
+text = "FPS: 60"
+horizontal_alignment = 2
+
+[node name="LoadingPanel" type="Panel" parent="."]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -50.0
+offset_right = 150.0
+offset_bottom = 50.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="LoadingLabel" type="Label" parent="LoadingPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Loading..."
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="DebugPanel" type="VBoxContainer" parent="."]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -200.0
+offset_top = 50.0
+offset_right = -10.0
+offset_bottom = 200.0
+grow_horizontal = 0
+
+[node name="BuildingCountLabel" type="Label" parent="DebugPanel"]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_1")
+text = "Buildings: 0"
+
+[node name="PositionLabel" type="Label" parent="DebugPanel"]
+layout_mode = 2
+theme_override_styles/normal = SubResource("StyleBoxFlat_1")
+text = "Pos: 0, 0, 0"
