@@ -25,6 +25,7 @@ var current_map_type: MapType = MapType.DEMO
 var player: CharacterBody3D = null
 var building_generator: Node3D = null
 var osm_fetcher: Node = null
+var street_props: Node3D = null
 
 # GPS Manager (autoload)
 @onready var gps_manager = get_node_or_null("/root/GPSManager")
@@ -73,6 +74,7 @@ func _try_start_game() -> void:
 func _find_references() -> void:
 	player = get_tree().get_first_node_in_group("player")
 	building_generator = get_tree().get_first_node_in_group("building_generator")
+	street_props = get_tree().get_first_node_in_group("street_props")
 
 	var main = get_tree().current_scene
 	if main:
@@ -96,6 +98,10 @@ func _start_demo_mode() -> void:
 		var demo_buildings = _create_demo_buildings()
 		await building_generator.generate_buildings(demo_buildings)
 		building_generator.create_ground(500.0)
+
+	# Generate street props (lamps, trash cans, etc)
+	if street_props:
+		street_props.generate_demo_props()
 
 	# Position player
 	if player:
