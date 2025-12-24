@@ -66,7 +66,8 @@ func _physics_process(delta: float) -> void:
 	right = right.normalized()
 
 	# Calculate movement direction relative to where camera is looking
-	var direction = (forward * -input_dir.y + right * input_dir.x).normalized()
+	# input_dir.y negative = forward, positive = backward
+	var direction = (forward * input_dir.y + right * input_dir.x).normalized()
 
 	# Apply speed
 	var current_speed = run_speed if is_running else walk_speed
