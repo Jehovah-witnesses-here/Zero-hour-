@@ -171,56 +171,293 @@ func _create_tower(pos: Vector3) -> void:
 	tower.position = pos
 	_map.add_child(tower)
 
-	# Tower is a lattice frame structure ~15m tall
-	var height = 15.0
-	var base_w = 5.0
-	var top_w = 2.0
+	# Tower is a SOLID industrial structure with corrugated metal walls
+	# NOT an open lattice - it's a boxy structure with platforms inside
+	var height = 14.0
+	var width = 6.0
+	var depth = 6.0
 
-	# Four main corner posts (tapered)
+	# === MAIN STRUCTURE (corrugated metal walls) ===
+	# Back wall (solid)
+	_add_corrugated_wall(tower, Vector3(0, height/2, -depth/2), width, height, 0)
+	# Left wall (solid)
+	_add_corrugated_wall(tower, Vector3(-width/2, height/2, 0), depth, height, PI/2)
+	# Right wall (partial - has opening)
+	_add_corrugated_wall(tower, Vector3(width/2, height/2 + 2, 0), depth, height - 4, PI/2)
+	# Front wall (partial - ground level open)
+	_add_corrugated_wall(tower, Vector3(0, height/2 + 3, depth/2), width, height - 6, 0)
+
+	# Corner posts (structural beams)
 	for x in [-1, 1]:
 		for z in [-1, 1]:
-			var bottom = Vector3(x * base_w/2, 0, z * base_w/2)
-			var top = Vector3(x * top_w/2, height, z * top_w/2)
-			_add_beam(tower, bottom, top, 0.12, _metal_dark)
+			_add_vertical_beam(tower, Vector3(x * width/2, 0, z * depth/2), height, 0.15)
 
-	# Horizontal rings at each level
-	var levels = [0.0, 3.0, 6.0, 9.0, 12.0, height]
-	for h in levels:
-		var t = h / height
-		var w = lerp(base_w, top_w, t)
-		_add_horizontal_ring(tower, h, w)
+	# === WALKABLE PLATFORMS ===
+	# Ground level floor
+	_add_solid_platform(tower, 0.1, width - 0.5, depth - 0.5)
 
-	# Cross bracing on each face
-	for i in range(len(levels) - 1):
-		var h1 = levels[i]
-		var h2 = levels[i + 1]
-		var t1 = h1 / height
-		var t2 = h2 / height
-		var w1 = lerp(base_w, top_w, t1)
-		var w2 = lerp(base_w, top_w, t2)
-		_add_cross_bracing(tower, h1, h2, w1, w2)
+	# First platform (4m up)
+	_add_solid_platform(tower, 4.0, width - 0.3, depth - 0.3)
 
-	# === PLATFORMS ===
-	# Top platform
-	_add_platform(tower, height, top_w + 0.5, _metal_dark)
-	# Middle platform (where pipeline connects)
-	_add_platform(tower, 9.0, 3.0, _metal_dark)
-	# Lower platform
-	_add_platform(tower, 5.0, 3.5, _metal_dark)
+	# Second platform (8m up)
+	_add_solid_platform(tower, 8.0, width - 0.3, depth - 0.3)
 
-	# === EXHAUST CHUTE (diagonal large pipe on south side) ===
-	var chute_bottom = Vector3(0, 0, base_w/2 + 0.5)
-	var chute_top = Vector3(0, 12.0, 1.5)
-	_add_pipe(tower, chute_bottom, chute_top, 0.8, _pipe_orange)
+	# Top platform (at top)
+	_add_solid_platform(tower, height - 0.5, width + 1.0, depth + 1.0)
 
-	# === LADDER (on north side) ===
-	_add_ladder(tower, Vector3(0, 0, -base_w/2 - 0.3), height - 0.5)
+	# === DUST CHUTE (large diagonal walkable tube) ===
+	# This is the iconic climbable chute on the outside
+	_create_dust_chute(tower, width, depth, height)
 
-	# Railing on top
-	_add_railing(tower, height, top_w + 0.5)
+	# === INTERNAL RAMPS between platforms ===
+	_add_ramp(tower, Vector3(-2, 0.1, 0), Vector3(-2, 4.0, -2), 1.2)
+	_add_ramp(tower, Vector3(2, 4.0, 0), Vector3(2, 8.0, 2), 1.2)
 
-	# Tower collision
-	_add_tower_collision(tower, base_w, top_w, height)
+	# === LADDER (backup way up) ===
+	_add_ladder(tower, Vector3(-width/2 + 0.3, 0, 0), height - 1)
+
+	# === TOP RAILING ===
+	_add_top_railing(tower, height - 0.5, width + 1.0, depth + 1.0)
+
+	# Main collision for walls
+	_add_tower_walls_collision(tower, width, depth, height)
+
+
+func _add_corrugated_wall(parent: Node3D, pos: Vector3, width: float, height: float, rot_y: float) -> void:
+	var wall = Node3D.new()
+	wall.position = pos
+	wall.rotation.y = rot_y
+	parent.add_child(wall)
+
+	# Main wall panel
+	var mesh = BoxMesh.new()
+	mesh.size = Vector3(width, height, 0.15)
+
+	var inst = MeshInstance3D.new()
+	inst.mesh = mesh
+	inst.material_override = _metal_rust
+	wall.add_child(inst)
+
+	# Corrugation ridges (vertical lines)
+	var num_ridges = int(width / 0.5)
+	for i in range(num_ridges):
+		var ridge_mesh = BoxMesh.new()
+		ridge_mesh.size = Vector3(0.08, height, 0.05)
+
+		var ridge = MeshInstance3D.new()
+		ridge.mesh = ridge_mesh
+		ridge.position.x = -width/2 + 0.25 + i * 0.5
+		ridge.position.z = 0.1
+		ridge.material_override = _metal_dark
+		wall.add_child(ridge)
+
+	# Collision
+	var body = StaticBody3D.new()
+	var coll = CollisionShape3D.new()
+	var shape = BoxShape3D.new()
+	shape.size = Vector3(width, height, 0.2)
+	coll.shape = shape
+	body.add_child(coll)
+	wall.add_child(body)
+
+
+func _add_vertical_beam(parent: Node3D, pos: Vector3, height: float, radius: float) -> void:
+	var mesh = CylinderMesh.new()
+	mesh.top_radius = radius
+	mesh.bottom_radius = radius
+	mesh.height = height
+
+	var inst = MeshInstance3D.new()
+	inst.mesh = mesh
+	inst.position = pos + Vector3(0, height/2, 0)
+	inst.material_override = _metal_dark
+	parent.add_child(inst)
+
+
+func _add_solid_platform(parent: Node3D, height: float, width: float, depth: float) -> void:
+	# Solid metal grating floor
+	var mesh = BoxMesh.new()
+	mesh.size = Vector3(width, 0.15, depth)
+
+	var plat = MeshInstance3D.new()
+	plat.mesh = mesh
+	plat.position.y = height
+	plat.material_override = _metal_light
+	parent.add_child(plat)
+
+	# Grating lines for detail
+	for i in range(-int(depth/2), int(depth/2) + 1):
+		var line_mesh = BoxMesh.new()
+		line_mesh.size = Vector3(width, 0.02, 0.04)
+
+		var line = MeshInstance3D.new()
+		line.mesh = line_mesh
+		line.position = Vector3(0, height + 0.08, i * 0.5)
+		line.material_override = _metal_dark
+		parent.add_child(line)
+
+	# Collision
+	var body = StaticBody3D.new()
+	var coll = CollisionShape3D.new()
+	var shape = BoxShape3D.new()
+	shape.size = Vector3(width, 0.2, depth)
+	coll.shape = shape
+	coll.position.y = height
+	body.add_child(coll)
+	parent.add_child(body)
+
+
+func _create_dust_chute(parent: Node3D, tower_w: float, tower_d: float, tower_h: float) -> void:
+	# The dust chute is a large diagonal enclosed walkway/pipe
+	# Goes from ground level on one side up to the second platform
+	var chute = Node3D.new()
+	chute.name = "DustChute"
+	parent.add_child(chute)
+
+	var start_pos = Vector3(tower_w/2 + 1.5, 0.5, 0)
+	var end_pos = Vector3(tower_w/2 + 0.5, 8.0, 0)
+	var chute_length = start_pos.distance_to(end_pos)
+	var chute_width = 1.8
+	var chute_height = 2.0
+
+	# Chute floor (walkable ramp)
+	var floor_mesh = BoxMesh.new()
+	floor_mesh.size = Vector3(chute_width, 0.15, chute_length)
+
+	var floor_inst = MeshInstance3D.new()
+	floor_inst.mesh = floor_mesh
+	floor_inst.material_override = _metal_light
+
+	# Position and rotate the chute
+	var center = (start_pos + end_pos) / 2
+	floor_inst.position = center
+	var angle = atan2(end_pos.y - start_pos.y, end_pos.distance_to(Vector3(start_pos.x, end_pos.y, start_pos.z)))
+	floor_inst.rotation.x = -angle
+	chute.add_child(floor_inst)
+
+	# Chute walls (left and right)
+	for side in [-1, 1]:
+		var wall_mesh = BoxMesh.new()
+		wall_mesh.size = Vector3(0.1, chute_height, chute_length)
+
+		var wall_inst = MeshInstance3D.new()
+		wall_inst.mesh = wall_mesh
+		wall_inst.position = center + Vector3(side * chute_width/2, chute_height/2 * cos(angle), 0)
+		wall_inst.rotation.x = -angle
+		wall_inst.material_override = _pipe_orange
+		chute.add_child(wall_inst)
+
+	# Chute roof
+	var roof_mesh = BoxMesh.new()
+	roof_mesh.size = Vector3(chute_width, 0.1, chute_length)
+
+	var roof_inst = MeshInstance3D.new()
+	roof_inst.mesh = roof_mesh
+	roof_inst.position = center + Vector3(0, chute_height * cos(angle), 0)
+	roof_inst.rotation.x = -angle
+	roof_inst.material_override = _pipe_orange
+	chute.add_child(roof_inst)
+
+	# Floor collision (walkable)
+	var body = StaticBody3D.new()
+	var coll = CollisionShape3D.new()
+	var shape = BoxShape3D.new()
+	shape.size = Vector3(chute_width, 0.2, chute_length)
+	coll.shape = shape
+	coll.position = center
+	coll.rotation.x = -angle
+	body.add_child(coll)
+	chute.add_child(body)
+
+
+func _add_ramp(parent: Node3D, start: Vector3, end: Vector3, width: float) -> void:
+	var dir = end - start
+	var length = dir.length()
+	var center = (start + end) / 2
+
+	var mesh = BoxMesh.new()
+	mesh.size = Vector3(width, 0.12, length)
+
+	var ramp = MeshInstance3D.new()
+	ramp.mesh = mesh
+	ramp.position = center
+	ramp.material_override = _metal_light
+
+	# Calculate rotation to align with slope
+	var horizontal_dist = Vector2(end.x - start.x, end.z - start.z).length()
+	var angle = atan2(end.y - start.y, horizontal_dist)
+	ramp.rotation.x = -angle
+
+	# Rotate around Y to face direction
+	var y_angle = atan2(end.x - start.x, end.z - start.z)
+	ramp.rotation.y = y_angle
+
+	parent.add_child(ramp)
+
+	# Collision
+	var body = StaticBody3D.new()
+	var coll = CollisionShape3D.new()
+	var shape = BoxShape3D.new()
+	shape.size = Vector3(width, 0.15, length)
+	coll.shape = shape
+	coll.position = center
+	coll.rotation = ramp.rotation
+	body.add_child(coll)
+	parent.add_child(body)
+
+
+func _add_top_railing(parent: Node3D, height: float, width: float, depth: float) -> void:
+	var rail_h = 1.0
+	var hw = width / 2
+	var hd = depth / 2
+
+	# Corner posts
+	var corners = [
+		Vector3(-hw, height, -hd),
+		Vector3(hw, height, -hd),
+		Vector3(hw, height, hd),
+		Vector3(-hw, height, hd),
+	]
+
+	for corner in corners:
+		var post_mesh = CylinderMesh.new()
+		post_mesh.top_radius = 0.04
+		post_mesh.bottom_radius = 0.04
+		post_mesh.height = rail_h
+
+		var post = MeshInstance3D.new()
+		post.mesh = post_mesh
+		post.position = corner + Vector3(0, rail_h/2, 0)
+		post.material_override = _metal_light
+		parent.add_child(post)
+
+	# Top rails connecting corners
+	for i in range(4):
+		var start = corners[i] + Vector3(0, rail_h, 0)
+		var end = corners[(i + 1) % 4] + Vector3(0, rail_h, 0)
+		_add_beam(parent, start, end, 0.03, _metal_light)
+
+
+func _add_tower_walls_collision(parent: Node3D, width: float, depth: float, height: float) -> void:
+	var body = StaticBody3D.new()
+
+	# Back wall collision
+	var back_coll = CollisionShape3D.new()
+	var back_shape = BoxShape3D.new()
+	back_shape.size = Vector3(width, height, 0.2)
+	back_coll.shape = back_shape
+	back_coll.position = Vector3(0, height/2, -depth/2)
+	body.add_child(back_coll)
+
+	# Left wall collision
+	var left_coll = CollisionShape3D.new()
+	var left_shape = BoxShape3D.new()
+	left_shape.size = Vector3(0.2, height, depth)
+	left_coll.shape = left_shape
+	left_coll.position = Vector3(-width/2, height/2, 0)
+	body.add_child(left_coll)
+
+	parent.add_child(body)
 
 
 func _add_beam(parent: Node3D, start: Vector3, end: Vector3, radius: float, mat: StandardMaterial3D) -> void:
