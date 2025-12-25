@@ -5,12 +5,13 @@ extends Control
 @onready var title_label: Label = $VBoxContainer/TitleLabel
 @onready var version_label: Label = $VBoxContainer/VersionLabel
 @onready var play_button: Button = $VBoxContainer/PlayButton
+@onready var settings_button: Button = $VBoxContainer/SettingsButton
 @onready var update_button: Button = $VBoxContainer/UpdateButton
 @onready var quit_button: Button = $VBoxContainer/QuitButton
 @onready var status_label: Label = $VBoxContainer/StatusLabel
 
 # Current version - update this with each release
-const CURRENT_VERSION: String = "0.3.0"
+const CURRENT_VERSION: String = "0.4.0"
 
 # GitHub repo info (public, no auth needed)
 const GITHUB_REPO: String = "Jehovah-witnesses-here/Zero-hour-"
@@ -20,6 +21,8 @@ const RELEASES_URL: String = "https://github.com/Jehovah-witnesses-here/Zero-hou
 func _ready() -> void:
 	if play_button:
 		play_button.pressed.connect(_on_play_pressed)
+	if settings_button:
+		settings_button.pressed.connect(_on_settings_pressed)
 	if update_button:
 		update_button.pressed.connect(_on_update_pressed)
 	if quit_button:
@@ -35,7 +38,17 @@ func _on_play_pressed() -> void:
 	_set_status("Loading...")
 	play_button.disabled = true
 	await get_tree().create_timer(0.2).timeout
-	get_tree().change_scene_to_file("res://scenes/main.tscn")
+	get_tree().change_scene_to_file("res://scenes/lobby.tscn")
+
+
+func _on_settings_pressed() -> void:
+	# TODO: Implement settings screen
+	var dialog = AcceptDialog.new()
+	dialog.title = "Settings"
+	dialog.dialog_text = "Settings coming soon!\n\n• Graphics options\n• Audio controls\n• Control sensitivity\n• Privacy settings"
+	dialog.confirmed.connect(func(): dialog.queue_free())
+	add_child(dialog)
+	dialog.popup_centered()
 
 
 func _on_update_pressed() -> void:

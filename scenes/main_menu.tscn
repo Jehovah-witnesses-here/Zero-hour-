@@ -69,7 +69,14 @@ custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
-text = "PLAY DEMO"
+text = "PLAY"
+
+[node name="SettingsButton" type="Button" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+text = "SETTINGS"
 
 [node name="UpdateButton" type="Button" parent="VBoxContainer"]
 custom_minimum_size = Vector2(0, 50)
