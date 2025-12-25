@@ -1,207 +1,231 @@
 extends Node3D
-## Rust Map Generator - MW2-style oil yard arena
-## Based on the iconic Call of Duty map layout
+## Rust Map Generator - Accurate MW2 oil yard recreation
+## Based on actual Call of Duty: Modern Warfare 2 Rust layout
 
 signal map_generated
 
 # Materials
-var _metal_mat: StandardMaterial3D
-var _rust_mat: StandardMaterial3D
-var _concrete_mat: StandardMaterial3D
-var _sand_mat: StandardMaterial3D
-var _pipe_mat: StandardMaterial3D
-var _container_mats: Array[StandardMaterial3D] = []
+var _metal_dark: StandardMaterial3D
+var _metal_rust: StandardMaterial3D
+var _metal_light: StandardMaterial3D
+var _concrete: StandardMaterial3D
+var _sand: StandardMaterial3D
+var _pipe_orange: StandardMaterial3D
+var _container_red: StandardMaterial3D
+var _container_blue: StandardMaterial3D
+var _container_green: StandardMaterial3D
+var _generator_gray: StandardMaterial3D
+var _wall_rust: StandardMaterial3D
 
-# Map container
-var _map_container: Node3D
+var _map: Node3D
 
 
 func _ready() -> void:
 	_setup_materials()
-	print("[RustMap] Ready")
+	print("[RustMap] Ready - MW2 Rust recreation")
 
 
 func _setup_materials() -> void:
-	# Rusty metal (tower, derrick)
-	_rust_mat = StandardMaterial3D.new()
-	_rust_mat.albedo_color = Color(0.45, 0.3, 0.2)
-	_rust_mat.metallic = 0.6
-	_rust_mat.roughness = 0.8
-	_rust_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	# Dark metal (tower frame)
+	_metal_dark = StandardMaterial3D.new()
+	_metal_dark.albedo_color = Color(0.25, 0.23, 0.22)
+	_metal_dark.metallic = 0.7
+	_metal_dark.roughness = 0.6
+	_metal_dark.cull_mode = BaseMaterial3D.CULL_DISABLED
 
-	# Clean metal (pipes)
-	_metal_mat = StandardMaterial3D.new()
-	_metal_mat.albedo_color = Color(0.5, 0.48, 0.45)
-	_metal_mat.metallic = 0.7
-	_metal_mat.roughness = 0.5
-	_metal_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	# Rusty metal
+	_metal_rust = StandardMaterial3D.new()
+	_metal_rust.albedo_color = Color(0.5, 0.32, 0.2)
+	_metal_rust.metallic = 0.5
+	_metal_rust.roughness = 0.8
+	_metal_rust.cull_mode = BaseMaterial3D.CULL_DISABLED
 
-	# Pipe material (slightly different)
-	_pipe_mat = StandardMaterial3D.new()
-	_pipe_mat.albedo_color = Color(0.55, 0.5, 0.4)
-	_pipe_mat.metallic = 0.5
-	_pipe_mat.roughness = 0.6
-	_pipe_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	# Light metal (pipes)
+	_metal_light = StandardMaterial3D.new()
+	_metal_light.albedo_color = Color(0.6, 0.58, 0.55)
+	_metal_light.metallic = 0.6
+	_metal_light.roughness = 0.5
+	_metal_light.cull_mode = BaseMaterial3D.CULL_DISABLED
+
+	# Orange/yellow pipe
+	_pipe_orange = StandardMaterial3D.new()
+	_pipe_orange.albedo_color = Color(0.8, 0.5, 0.15)
+	_pipe_orange.metallic = 0.4
+	_metal_rust.roughness = 0.6
+	_pipe_orange.cull_mode = BaseMaterial3D.CULL_DISABLED
 
 	# Concrete
-	_concrete_mat = StandardMaterial3D.new()
-	_concrete_mat.albedo_color = Color(0.55, 0.52, 0.48)
-	_concrete_mat.roughness = 0.95
-	_concrete_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_concrete = StandardMaterial3D.new()
+	_concrete.albedo_color = Color(0.55, 0.52, 0.48)
+	_concrete.roughness = 0.95
+	_concrete.cull_mode = BaseMaterial3D.CULL_DISABLED
 
-	# Desert sand ground
-	_sand_mat = StandardMaterial3D.new()
-	_sand_mat.albedo_color = Color(0.76, 0.65, 0.45)
-	_sand_mat.roughness = 1.0
+	# Sand ground
+	_sand = StandardMaterial3D.new()
+	_sand.albedo_color = Color(0.78, 0.68, 0.48)
+	_sand.roughness = 1.0
 
-	# Container colors (various shipping container colors)
-	var container_colors = [
-		Color(0.6, 0.2, 0.15),  # Red/rust
-		Color(0.2, 0.35, 0.5),  # Blue
-		Color(0.25, 0.4, 0.25), # Green
-		Color(0.5, 0.45, 0.35), # Tan
-		Color(0.3, 0.3, 0.32),  # Gray
-	]
+	# Containers
+	_container_red = StandardMaterial3D.new()
+	_container_red.albedo_color = Color(0.6, 0.18, 0.12)
+	_container_red.metallic = 0.3
+	_container_red.roughness = 0.7
+	_container_red.cull_mode = BaseMaterial3D.CULL_DISABLED
 
-	for color in container_colors:
-		var mat = StandardMaterial3D.new()
-		mat.albedo_color = color
-		mat.metallic = 0.4
-		mat.roughness = 0.7
-		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-		_container_mats.append(mat)
+	_container_blue = StandardMaterial3D.new()
+	_container_blue.albedo_color = Color(0.15, 0.25, 0.45)
+	_container_blue.metallic = 0.3
+	_container_blue.roughness = 0.7
+	_container_blue.cull_mode = BaseMaterial3D.CULL_DISABLED
+
+	_container_green = StandardMaterial3D.new()
+	_container_green.albedo_color = Color(0.2, 0.35, 0.2)
+	_container_green.metallic = 0.3
+	_container_green.roughness = 0.7
+	_container_green.cull_mode = BaseMaterial3D.CULL_DISABLED
+
+	# Generator gray
+	_generator_gray = StandardMaterial3D.new()
+	_generator_gray.albedo_color = Color(0.4, 0.42, 0.45)
+	_generator_gray.metallic = 0.5
+	_generator_gray.roughness = 0.6
+	_generator_gray.cull_mode = BaseMaterial3D.CULL_DISABLED
+
+	# Rusty wall
+	_wall_rust = StandardMaterial3D.new()
+	_wall_rust.albedo_color = Color(0.55, 0.28, 0.18)
+	_wall_rust.roughness = 0.9
+	_wall_rust.cull_mode = BaseMaterial3D.CULL_DISABLED
 
 
 func generate_map() -> void:
-	print("[RustMap] Generating Rust-style map...")
+	print("[RustMap] Generating accurate Rust layout...")
 
-	# Clear old map
-	if _map_container:
-		_map_container.queue_free()
+	if _map:
+		_map.queue_free()
 		await get_tree().process_frame
 
-	_map_container = Node3D.new()
-	_map_container.name = "RustMap"
-	add_child(_map_container)
+	_map = Node3D.new()
+	_map.name = "RustArena"
+	add_child(_map)
 
-	# Create ground (desert sand)
+	# Desert ground
 	_create_ground()
 
-	# Central oil tower (the iconic centerpiece)
-	_create_oil_tower(Vector3(0, 0, 0))
+	# === CENTRAL TOWER (the iconic centerpiece) ===
+	_create_tower(Vector3(0, 0, 0))
 
-	# Oil derrick in northwest
-	_create_oil_derrick(Vector3(-18, 0, -15))
+	# === CONTROL ROOM (small building SE of tower) ===
+	_create_control_room(Vector3(8, 0, 6))
 
-	# Elevated pipeline along north side
-	_create_pipeline_system()
+	# === GENERATORS (around tower) ===
+	_create_generators()
 
-	# Containers for cover
-	_create_containers()
+	# === PIPELINE (elevated north side) ===
+	_create_pipeline()
 
-	# Fuel depot area (south)
-	_create_fuel_depot()
+	# === OIL DERRICK (northwest corner) ===
+	_create_oil_derrick(Vector3(-18, 0, -16))
 
-	# Small structures and barriers
-	_create_barriers_and_cover()
+	# === LOADING DOCK (containers east side) ===
+	_create_loading_dock()
 
-	# Underground tunnels/passages
-	_create_tunnel_entrances()
+	# === FUEL DEPOT (south) ===
+	_create_fuel_area()
 
-	print("[RustMap] Map generation complete!")
+	# === MAINTENANCE AREA ===
+	_create_maintenance()
+
+	# === PERIMETER WALLS ===
+	_create_perimeter()
+
+	# === TOWER BASE MAZE (crawl spaces) ===
+	_create_tower_maze()
+
+	print("[RustMap] Map complete - 12 zones created")
 	map_generated.emit()
 
 
 func _create_ground() -> void:
-	var ground_mesh = PlaneMesh.new()
-	ground_mesh.size = Vector2(80, 80)
+	var mesh = PlaneMesh.new()
+	mesh.size = Vector2(70, 70)
 
 	var ground = MeshInstance3D.new()
-	ground.mesh = ground_mesh
-	ground.material_override = _sand_mat
-	_map_container.add_child(ground)
+	ground.mesh = mesh
+	ground.material_override = _sand
+	_map.add_child(ground)
 
-	# Collision
 	var body = StaticBody3D.new()
 	var coll = CollisionShape3D.new()
 	var shape = BoxShape3D.new()
-	shape.size = Vector3(80, 0.1, 80)
+	shape.size = Vector3(70, 0.1, 70)
 	coll.shape = shape
 	coll.position.y = -0.05
 	body.add_child(coll)
-	_map_container.add_child(body)
+	_map.add_child(body)
 
 
-func _create_oil_tower(pos: Vector3) -> void:
+func _create_tower(pos: Vector3) -> void:
 	var tower = Node3D.new()
-	tower.name = "OilTower"
+	tower.name = "Tower"
 	tower.position = pos
-	_map_container.add_child(tower)
+	_map.add_child(tower)
 
-	var tower_height = 18.0
-	var base_size = 4.0
+	# Tower is a lattice frame structure ~15m tall
+	var height = 15.0
+	var base_w = 5.0
+	var top_w = 2.0
 
-	# Four corner legs
+	# Four main corner posts (tapered)
 	for x in [-1, 1]:
 		for z in [-1, 1]:
-			var leg = _create_beam(
-				Vector3(x * base_size/2, 0, z * base_size/2),
-				Vector3(x * 1.0, tower_height, z * 1.0),
-				0.15
-			)
-			tower.add_child(leg)
+			var bottom = Vector3(x * base_w/2, 0, z * base_w/2)
+			var top = Vector3(x * top_w/2, height, z * top_w/2)
+			_add_beam(tower, bottom, top, 0.12, _metal_dark)
 
-	# Cross bracing on each side
-	for height in [3.0, 7.0, 11.0, 15.0]:
-		# X braces
-		for z in [-1, 1]:
-			var brace1 = _create_beam(
-				Vector3(-base_size/2 * (1 - height/tower_height*0.7), height, z * base_size/2 * (1 - height/tower_height*0.7)),
-				Vector3(base_size/2 * (1 - (height+2)/tower_height*0.7), height + 2, z * base_size/2 * (1 - (height+2)/tower_height*0.7)),
-				0.08
-			)
-			tower.add_child(brace1)
+	# Horizontal rings at each level
+	var levels = [0.0, 3.0, 6.0, 9.0, 12.0, height]
+	for h in levels:
+		var t = h / height
+		var w = lerp(base_w, top_w, t)
+		_add_horizontal_ring(tower, h, w)
 
-		# Z braces
-		for x in [-1, 1]:
-			var brace2 = _create_beam(
-				Vector3(x * base_size/2 * (1 - height/tower_height*0.7), height, -base_size/2 * (1 - height/tower_height*0.7)),
-				Vector3(x * base_size/2 * (1 - (height+2)/tower_height*0.7), height + 2, base_size/2 * (1 - (height+2)/tower_height*0.7)),
-				0.08
-			)
-			tower.add_child(brace2)
+	# Cross bracing on each face
+	for i in range(len(levels) - 1):
+		var h1 = levels[i]
+		var h2 = levels[i + 1]
+		var t1 = h1 / height
+		var t2 = h2 / height
+		var w1 = lerp(base_w, top_w, t1)
+		var w2 = lerp(base_w, top_w, t2)
+		_add_cross_bracing(tower, h1, h2, w1, w2)
 
-	# Horizontal rings at different levels
-	for height in [4.0, 8.0, 12.0, 16.0]:
-		var ring_size = base_size * (1 - height/tower_height * 0.7)
-		_create_platform_ring(tower, height, ring_size)
+	# === PLATFORMS ===
+	# Top platform
+	_add_platform(tower, height, top_w + 0.5, _metal_dark)
+	# Middle platform (where pipeline connects)
+	_add_platform(tower, 9.0, 3.0, _metal_dark)
+	# Lower platform
+	_add_platform(tower, 5.0, 3.5, _metal_dark)
 
-	# Platforms
-	_create_platform(tower, 5.0, 3.0)   # Lower platform
-	_create_platform(tower, 10.0, 2.5)  # Middle platform
-	_create_platform(tower, 15.0, 2.0)  # Upper platform
-	_create_platform(tower, 17.5, 1.5)  # Top platform
+	# === EXHAUST CHUTE (diagonal large pipe on south side) ===
+	var chute_bottom = Vector3(0, 0, base_w/2 + 0.5)
+	var chute_top = Vector3(0, 12.0, 1.5)
+	_add_pipe(tower, chute_bottom, chute_top, 0.8, _pipe_orange)
 
-	# Ladder
-	_create_ladder(tower, Vector3(1.5, 0, 0), 17.0)
+	# === LADDER (on north side) ===
+	_add_ladder(tower, Vector3(0, 0, -base_w/2 - 0.3), height - 0.5)
 
-	# Tower collision (simplified)
-	var body = StaticBody3D.new()
-	for x in [-1, 1]:
-		for z in [-1, 1]:
-			var coll = CollisionShape3D.new()
-			var shape = CylinderShape3D.new()
-			shape.radius = 0.2
-			shape.height = tower_height
-			coll.shape = shape
-			coll.position = Vector3(x * 1.5, tower_height/2, z * 1.5)
-			body.add_child(coll)
-	tower.add_child(body)
+	# Railing on top
+	_add_railing(tower, height, top_w + 0.5)
+
+	# Tower collision
+	_add_tower_collision(tower, base_w, top_w, height)
 
 
-func _create_beam(start: Vector3, end: Vector3, radius: float) -> MeshInstance3D:
-	var direction = end - start
-	var length = direction.length()
+func _add_beam(parent: Node3D, start: Vector3, end: Vector3, radius: float, mat: StandardMaterial3D) -> void:
+	var dir = end - start
+	var length = dir.length()
 	var center = (start + end) / 2
 
 	var mesh = CylinderMesh.new()
@@ -211,44 +235,90 @@ func _create_beam(start: Vector3, end: Vector3, radius: float) -> MeshInstance3D
 
 	var inst = MeshInstance3D.new()
 	inst.mesh = mesh
-	inst.material_override = _rust_mat
+	inst.material_override = mat
 	inst.position = center
 
-	# Rotate to align with direction
-	if direction.normalized() != Vector3.UP and direction.normalized() != Vector3.DOWN:
-		inst.look_at(inst.position + direction, Vector3.UP)
+	if dir.normalized() != Vector3.UP and dir.normalized() != Vector3.DOWN:
+		inst.look_at(inst.global_position + dir, Vector3.UP)
 		inst.rotate_object_local(Vector3.RIGHT, PI/2)
 
-	return inst
+	parent.add_child(inst)
 
 
-func _create_platform_ring(parent: Node3D, height: float, size: float) -> void:
-	var half = size / 2
+func _add_horizontal_ring(parent: Node3D, height: float, width: float) -> void:
+	var half = width / 2
 	var corners = [
 		Vector3(-half, height, -half),
 		Vector3(half, height, -half),
 		Vector3(half, height, half),
 		Vector3(-half, height, half),
 	]
-
 	for i in range(4):
-		var start = corners[i]
-		var end = corners[(i + 1) % 4]
-		var beam = _create_beam(start, end, 0.06)
-		parent.add_child(beam)
+		_add_beam(parent, corners[i], corners[(i+1) % 4], 0.08, _metal_dark)
 
 
-func _create_platform(parent: Node3D, height: float, size: float) -> void:
+func _add_cross_bracing(parent: Node3D, h1: float, h2: float, w1: float, w2: float) -> void:
+	# X-brace on each of the 4 faces
+	for face in range(4):
+		var angle = face * PI / 2
+		var cos_a = cos(angle)
+		var sin_a = sin(angle)
+
+		# Two corners at bottom
+		var b1 = Vector3(cos_a * w1/2, h1, sin_a * w1/2)
+		var b2 = Vector3(cos_a * w1/2 + sin_a * w1, h1, sin_a * w1/2 - cos_a * w1)
+		# Fix: simpler approach - just do adjacent corners
+		if face == 0:
+			b1 = Vector3(-w1/2, h1, -w1/2)
+			b2 = Vector3(w1/2, h1, -w1/2)
+			var t1 = Vector3(-w2/2, h2, -w2/2)
+			var t2 = Vector3(w2/2, h2, -w2/2)
+			_add_beam(parent, b1, t2, 0.05, _metal_dark)
+			_add_beam(parent, b2, t1, 0.05, _metal_dark)
+		elif face == 1:
+			b1 = Vector3(w1/2, h1, -w1/2)
+			b2 = Vector3(w1/2, h1, w1/2)
+			var t1 = Vector3(w2/2, h2, -w2/2)
+			var t2 = Vector3(w2/2, h2, w2/2)
+			_add_beam(parent, b1, t2, 0.05, _metal_dark)
+			_add_beam(parent, b2, t1, 0.05, _metal_dark)
+		elif face == 2:
+			b1 = Vector3(w1/2, h1, w1/2)
+			b2 = Vector3(-w1/2, h1, w1/2)
+			var t1 = Vector3(w2/2, h2, w2/2)
+			var t2 = Vector3(-w2/2, h2, w2/2)
+			_add_beam(parent, b1, t2, 0.05, _metal_dark)
+			_add_beam(parent, b2, t1, 0.05, _metal_dark)
+		else:
+			b1 = Vector3(-w1/2, h1, w1/2)
+			b2 = Vector3(-w1/2, h1, -w1/2)
+			var t1 = Vector3(-w2/2, h2, w2/2)
+			var t2 = Vector3(-w2/2, h2, -w2/2)
+			_add_beam(parent, b1, t2, 0.05, _metal_dark)
+			_add_beam(parent, b2, t1, 0.05, _metal_dark)
+
+
+func _add_platform(parent: Node3D, height: float, size: float, mat: StandardMaterial3D) -> void:
 	var mesh = BoxMesh.new()
-	mesh.size = Vector3(size, 0.15, size)
+	mesh.size = Vector3(size, 0.1, size)
 
 	var plat = MeshInstance3D.new()
 	plat.mesh = mesh
 	plat.position.y = height
-	plat.material_override = _metal_mat
+	plat.material_override = mat
 	parent.add_child(plat)
 
-	# Platform collision
+	# Grating pattern (simple visual detail)
+	for i in range(-2, 3):
+		var line_mesh = BoxMesh.new()
+		line_mesh.size = Vector3(size, 0.02, 0.05)
+		var line = MeshInstance3D.new()
+		line.mesh = line_mesh
+		line.position = Vector3(0, height + 0.06, i * size/5)
+		line.material_override = _metal_light
+		parent.add_child(line)
+
+	# Collision
 	var body = StaticBody3D.new()
 	var coll = CollisionShape3D.new()
 	var shape = BoxShape3D.new()
@@ -259,9 +329,36 @@ func _create_platform(parent: Node3D, height: float, size: float) -> void:
 	parent.add_child(body)
 
 
-func _create_ladder(parent: Node3D, pos: Vector3, height: float) -> void:
-	# Ladder rails
-	for x_off in [-0.2, 0.2]:
+func _add_pipe(parent: Node3D, start: Vector3, end: Vector3, radius: float, mat: StandardMaterial3D) -> void:
+	_add_beam(parent, start, end, radius, mat)
+
+	# Add collision for pipe
+	var dir = end - start
+	var length = dir.length()
+	var center = (start + end) / 2
+
+	var body = StaticBody3D.new()
+	var coll = CollisionShape3D.new()
+	var shape = CylinderShape3D.new()
+	shape.radius = radius
+	shape.height = length
+	coll.shape = shape
+	coll.position = center
+
+	if dir.normalized() != Vector3.UP:
+		var inst = MeshInstance3D.new()  # dummy for rotation calc
+		inst.position = center
+		inst.look_at(inst.position + dir, Vector3.UP)
+		inst.rotate_object_local(Vector3.RIGHT, PI/2)
+		coll.rotation = inst.rotation
+
+	body.add_child(coll)
+	parent.add_child(body)
+
+
+func _add_ladder(parent: Node3D, pos: Vector3, height: float) -> void:
+	# Rails
+	for x in [-0.2, 0.2]:
 		var rail_mesh = CylinderMesh.new()
 		rail_mesh.top_radius = 0.03
 		rail_mesh.bottom_radius = 0.03
@@ -269,113 +366,185 @@ func _create_ladder(parent: Node3D, pos: Vector3, height: float) -> void:
 
 		var rail = MeshInstance3D.new()
 		rail.mesh = rail_mesh
-		rail.position = pos + Vector3(x_off, height/2, 0)
-		rail.material_override = _metal_mat
+		rail.position = pos + Vector3(x, height/2, 0)
+		rail.material_override = _metal_light
 		parent.add_child(rail)
 
 	# Rungs
-	for h in range(0, int(height), 1):
+	for h in range(1, int(height), 1):
 		var rung_mesh = CylinderMesh.new()
-		rung_mesh.top_radius = 0.02
-		rung_mesh.bottom_radius = 0.02
+		rung_mesh.top_radius = 0.025
+		rung_mesh.bottom_radius = 0.025
 		rung_mesh.height = 0.4
 
 		var rung = MeshInstance3D.new()
 		rung.mesh = rung_mesh
-		rung.position = pos + Vector3(0, h + 0.5, 0)
+		rung.position = pos + Vector3(0, h, 0)
 		rung.rotation.z = PI/2
-		rung.material_override = _metal_mat
+		rung.material_override = _metal_light
 		parent.add_child(rung)
 
 
-func _create_oil_derrick(pos: Vector3) -> void:
-	var derrick = Node3D.new()
-	derrick.name = "OilDerrick"
-	derrick.position = pos
-	_map_container.add_child(derrick)
+func _add_railing(parent: Node3D, height: float, size: float) -> void:
+	var rail_h = 1.0
+	var half = size / 2
 
-	# Pump base
+	# Corner posts
+	for x in [-1, 1]:
+		for z in [-1, 1]:
+			var post_mesh = CylinderMesh.new()
+			post_mesh.top_radius = 0.03
+			post_mesh.bottom_radius = 0.03
+			post_mesh.height = rail_h
+
+			var post = MeshInstance3D.new()
+			post.mesh = post_mesh
+			post.position = Vector3(x * half, height + rail_h/2, z * half)
+			post.material_override = _metal_light
+			parent.add_child(post)
+
+	# Top rails
+	var corners = [
+		Vector3(-half, height + rail_h, -half),
+		Vector3(half, height + rail_h, -half),
+		Vector3(half, height + rail_h, half),
+		Vector3(-half, height + rail_h, half),
+	]
+	for i in range(4):
+		_add_beam(parent, corners[i], corners[(i+1) % 4], 0.025, _metal_light)
+
+
+func _add_tower_collision(parent: Node3D, base_w: float, top_w: float, height: float) -> void:
+	var body = StaticBody3D.new()
+	for x in [-1, 1]:
+		for z in [-1, 1]:
+			var coll = CollisionShape3D.new()
+			var shape = CapsuleShape3D.new()
+			shape.radius = 0.15
+			shape.height = height
+			coll.shape = shape
+			coll.position = Vector3(x * (base_w + top_w)/4, height/2, z * (base_w + top_w)/4)
+			body.add_child(coll)
+	parent.add_child(body)
+
+
+func _create_control_room(pos: Vector3) -> void:
+	var room = Node3D.new()
+	room.name = "ControlRoom"
+	room.position = pos
+	_map.add_child(room)
+
+	# Small metal shack/building
 	var base_mesh = BoxMesh.new()
-	base_mesh.size = Vector3(3, 0.5, 2)
+	base_mesh.size = Vector3(4, 3, 3)
 
 	var base = MeshInstance3D.new()
 	base.mesh = base_mesh
-	base.position.y = 0.25
-	base.material_override = _concrete_mat
-	derrick.add_child(base)
+	base.position.y = 1.5
+	base.material_override = _metal_rust
+	room.add_child(base)
 
-	# Pump body
+	# Roof (slightly slanted)
+	var roof_mesh = BoxMesh.new()
+	roof_mesh.size = Vector3(4.5, 0.2, 3.5)
+
+	var roof = MeshInstance3D.new()
+	roof.mesh = roof_mesh
+	roof.position.y = 3.1
+	roof.material_override = _metal_dark
+	room.add_child(roof)
+
+	# Door opening
+	var door_mesh = BoxMesh.new()
+	door_mesh.size = Vector3(1, 2.2, 0.1)
+
+	var door = MeshInstance3D.new()
+	door.mesh = door_mesh
+	door.position = Vector3(0, 1.1, -1.55)
+	door.material_override = _metal_dark
+	room.add_child(door)
+
+	# Collision
+	var body = StaticBody3D.new()
+	var coll = CollisionShape3D.new()
+	var shape = BoxShape3D.new()
+	shape.size = Vector3(4, 3, 3)
+	coll.shape = shape
+	coll.position.y = 1.5
+	body.add_child(coll)
+	room.add_child(body)
+
+
+func _create_generators() -> void:
+	# Generator units around the tower
+	var gen_positions = [
+		Vector3(6, 0, -3),
+		Vector3(-6, 0, 2),
+		Vector3(4, 0, -8),
+	]
+
+	for pos in gen_positions:
+		_create_generator(pos)
+
+
+func _create_generator(pos: Vector3) -> void:
+	var gen = Node3D.new()
+	gen.name = "Generator"
+	gen.position = pos
+	gen.rotation.y = randf() * PI
+	_map.add_child(gen)
+
+	# Main unit body
 	var body_mesh = BoxMesh.new()
-	body_mesh.size = Vector3(1.5, 2, 1.2)
+	body_mesh.size = Vector3(2.5, 1.8, 1.5)
 
-	var pump_body = MeshInstance3D.new()
-	pump_body.mesh = body_mesh
-	pump_body.position = Vector3(-0.5, 1.5, 0)
-	pump_body.material_override = _rust_mat
-	derrick.add_child(pump_body)
+	var body_inst = MeshInstance3D.new()
+	body_inst.mesh = body_mesh
+	body_inst.position.y = 0.9
+	body_inst.material_override = _generator_gray
+	gen.add_child(body_inst)
 
-	# Walking beam (the bobbing arm)
-	var beam_mesh = BoxMesh.new()
-	beam_mesh.size = Vector3(5, 0.3, 0.4)
+	# Top vent/exhaust
+	var vent_mesh = CylinderMesh.new()
+	vent_mesh.top_radius = 0.2
+	vent_mesh.bottom_radius = 0.25
+	vent_mesh.height = 0.5
 
-	var beam = MeshInstance3D.new()
-	beam.mesh = beam_mesh
-	beam.position = Vector3(1, 3, 0)
-	beam.rotation.z = -0.15  # Slight tilt
-	beam.material_override = _rust_mat
-	derrick.add_child(beam)
-
-	# Horse head (the curved end)
-	var head_mesh = BoxMesh.new()
-	head_mesh.size = Vector3(0.8, 1.2, 0.4)
-
-	var head = MeshInstance3D.new()
-	head.mesh = head_mesh
-	head.position = Vector3(3.2, 2.5, 0)
-	head.material_override = _rust_mat
-	derrick.add_child(head)
-
-	# Support A-frame
-	for x_off in [-0.4, 0.4]:
-		var support = _create_beam(
-			Vector3(-0.5 + x_off, 0.5, 0),
-			Vector3(-0.5, 3.5, 0),
-			0.1
-		)
-		derrick.add_child(support)
+	var vent = MeshInstance3D.new()
+	vent.mesh = vent_mesh
+	vent.position = Vector3(0.8, 2.05, 0)
+	vent.material_override = _metal_dark
+	gen.add_child(vent)
 
 	# Collision
 	var coll_body = StaticBody3D.new()
 	var coll = CollisionShape3D.new()
 	var shape = BoxShape3D.new()
-	shape.size = Vector3(6, 4, 2)
+	shape.size = Vector3(2.5, 1.8, 1.5)
 	coll.shape = shape
-	coll.position = Vector3(0.5, 2, 0)
+	coll.position.y = 0.9
 	coll_body.add_child(coll)
-	derrick.add_child(coll_body)
+	gen.add_child(coll_body)
 
 
-func _create_pipeline_system() -> void:
-	# Main elevated pipeline along north side
-	var pipe_height = 3.5
+func _create_pipeline() -> void:
+	# Elevated pipeline along north side connecting tower to oil derrick
+	var pipe_h = 4.0
 
-	# Long horizontal pipe
-	_create_pipe(Vector3(-25, pipe_height, -20), Vector3(25, pipe_height, -20), 0.6)
+	# Main horizontal run
+	_create_pipe_section(Vector3(-22, pipe_h, -18), Vector3(5, pipe_h, -18), 0.5)
 
-	# Connecting pipes to tower
-	_create_pipe(Vector3(0, pipe_height, -20), Vector3(0, 8, -5), 0.5)
+	# Branch to tower middle platform
+	_create_pipe_section(Vector3(-5, pipe_h, -18), Vector3(-2, 9, -2), 0.4)
 
-	# Pipe to derrick
-	_create_pipe(Vector3(-18, pipe_height, -20), Vector3(-18, 2, -15), 0.4)
-
-	# Support pillars for elevated pipe
-	for x in [-20, -10, 0, 10, 20]:
-		_create_pipe_support(Vector3(x, 0, -20), pipe_height)
+	# Supports
+	for x in [-18, -10, -2, 5]:
+		_create_pipe_support(Vector3(x, 0, -18), pipe_h)
 
 
-func _create_pipe(start: Vector3, end: Vector3, radius: float) -> void:
-	var direction = end - start
-	var length = direction.length()
+func _create_pipe_section(start: Vector3, end: Vector3, radius: float) -> void:
+	var dir = end - start
+	var length = dir.length()
 	var center = (start + end) / 2
 
 	var mesh = CylinderMesh.new()
@@ -385,31 +554,29 @@ func _create_pipe(start: Vector3, end: Vector3, radius: float) -> void:
 
 	var inst = MeshInstance3D.new()
 	inst.mesh = mesh
-	inst.material_override = _pipe_mat
+	inst.material_override = _metal_light
 	inst.position = center
 
-	if direction.normalized() != Vector3.UP and direction.normalized() != Vector3.DOWN:
-		inst.look_at(inst.position + direction, Vector3.UP)
+	if dir.normalized() != Vector3.UP and dir.normalized() != Vector3.DOWN:
+		inst.look_at(inst.global_position + dir, Vector3.UP)
 		inst.rotate_object_local(Vector3.RIGHT, PI/2)
 
-	_map_container.add_child(inst)
+	_map.add_child(inst)
 
-	# Pipe collision
+	# Collision
 	var body = StaticBody3D.new()
 	var coll = CollisionShape3D.new()
-	var shape = CylinderShape3D.new()
+	var shape = CapsuleShape3D.new()
 	shape.radius = radius
 	shape.height = length
 	coll.shape = shape
 	coll.position = center
-	if direction.normalized() != Vector3.UP:
-		coll.rotation = inst.rotation
+	coll.rotation = inst.rotation
 	body.add_child(coll)
-	_map_container.add_child(body)
+	_map.add_child(body)
 
 
 func _create_pipe_support(pos: Vector3, height: float) -> void:
-	# Vertical support beam
 	var mesh = CylinderMesh.new()
 	mesh.top_radius = 0.15
 	mesh.bottom_radius = 0.2
@@ -418,219 +585,267 @@ func _create_pipe_support(pos: Vector3, height: float) -> void:
 	var support = MeshInstance3D.new()
 	support.mesh = mesh
 	support.position = pos + Vector3(0, height/2, 0)
-	support.material_override = _rust_mat
-	_map_container.add_child(support)
+	support.material_override = _metal_rust
+	_map.add_child(support)
+
+	# Collision
+	var body = StaticBody3D.new()
+	var coll = CollisionShape3D.new()
+	var shape = CylinderShape3D.new()
+	shape.radius = 0.2
+	shape.height = height
+	coll.shape = shape
+	coll.position = pos + Vector3(0, height/2, 0)
+	body.add_child(coll)
+	_map.add_child(body)
 
 
-func _create_containers() -> void:
-	# Shipping containers for cover - positioned around the map
-	var container_positions = [
-		# East side
-		{"pos": Vector3(20, 0, 5), "rot": 0.0},
-		{"pos": Vector3(22, 0, -5), "rot": 0.2},
-		{"pos": Vector3(18, 2.5, 5), "rot": 0.0},  # Stacked
+func _create_oil_derrick(pos: Vector3) -> void:
+	var derrick = Node3D.new()
+	derrick.name = "OilDerrick"
+	derrick.position = pos
+	_map.add_child(derrick)
 
-		# West side
-		{"pos": Vector3(-22, 0, 8), "rot": -0.1},
-		{"pos": Vector3(-20, 0, -8), "rot": 0.3},
+	# Pumpjack base platform
+	var base_mesh = BoxMesh.new()
+	base_mesh.size = Vector3(5, 0.4, 3)
 
-		# South corners
-		{"pos": Vector3(15, 0, 18), "rot": 0.5},
-		{"pos": Vector3(-15, 0, 20), "rot": -0.4},
+	var base = MeshInstance3D.new()
+	base.mesh = base_mesh
+	base.position.y = 0.2
+	base.material_override = _concrete
+	derrick.add_child(base)
 
-		# Near tower
-		{"pos": Vector3(8, 0, 5), "rot": 0.8},
-		{"pos": Vector3(-8, 0, -6), "rot": 0.0},
-	]
+	# Motor housing
+	var motor_mesh = BoxMesh.new()
+	motor_mesh.size = Vector3(1.5, 1.2, 1.2)
 
-	for data in container_positions:
-		_create_container(data.pos, data.rot)
+	var motor = MeshInstance3D.new()
+	motor.mesh = motor_mesh
+	motor.position = Vector3(-1.5, 1.0, 0)
+	motor.material_override = _metal_rust
+	derrick.add_child(motor)
 
+	# Walking beam (the rocking arm)
+	var beam_mesh = BoxMesh.new()
+	beam_mesh.size = Vector3(4.5, 0.25, 0.3)
 
-func _create_container(pos: Vector3, rotation_y: float) -> void:
-	var container = Node3D.new()
-	container.position = pos
-	container.rotation.y = rotation_y
-	_map_container.add_child(container)
+	var beam = MeshInstance3D.new()
+	beam.mesh = beam_mesh
+	beam.position = Vector3(0.5, 2.8, 0)
+	beam.rotation.z = -0.1
+	beam.material_override = _metal_dark
+	derrick.add_child(beam)
 
-	# Container body
-	var mesh = BoxMesh.new()
-	mesh.size = Vector3(6, 2.5, 2.4)
+	# Samson post (A-frame support)
+	_add_beam(derrick, Vector3(-1, 0.4, -0.5), Vector3(-0.5, 3.2, 0), 0.1, _metal_dark)
+	_add_beam(derrick, Vector3(-1, 0.4, 0.5), Vector3(-0.5, 3.2, 0), 0.1, _metal_dark)
 
-	var body_mesh = MeshInstance3D.new()
-	body_mesh.mesh = mesh
-	body_mesh.position.y = 1.25
-	body_mesh.material_override = _container_mats[randi() % _container_mats.size()]
-	container.add_child(body_mesh)
+	# Horsehead
+	var head_mesh = BoxMesh.new()
+	head_mesh.size = Vector3(0.6, 0.8, 0.3)
 
-	# Container ridges (for detail)
-	for i in range(-2, 3):
-		var ridge_mesh = BoxMesh.new()
-		ridge_mesh.size = Vector3(0.08, 2.3, 2.5)
+	var head = MeshInstance3D.new()
+	head.mesh = head_mesh
+	head.position = Vector3(2.5, 2.5, 0)
+	head.material_override = _metal_dark
+	derrick.add_child(head)
 
-		var ridge = MeshInstance3D.new()
-		ridge.mesh = ridge_mesh
-		ridge.position = Vector3(i * 1.2, 1.25, 0)
-		ridge.material_override = _metal_mat
-		container.add_child(ridge)
+	# Counterweight
+	var counter_mesh = BoxMesh.new()
+	counter_mesh.size = Vector3(0.8, 0.6, 0.5)
+
+	var counter = MeshInstance3D.new()
+	counter.mesh = counter_mesh
+	counter.position = Vector3(-1.2, 2.0, 0)
+	counter.material_override = _metal_rust
+	derrick.add_child(counter)
+
+	# Raised platform for sniping
+	var platform_mesh = BoxMesh.new()
+	platform_mesh.size = Vector3(3, 0.15, 2)
+
+	var platform = MeshInstance3D.new()
+	platform.mesh = platform_mesh
+	platform.position = Vector3(0, 3.5, -2)
+	platform.material_override = _metal_dark
+	derrick.add_child(platform)
 
 	# Collision
 	var body = StaticBody3D.new()
 	var coll = CollisionShape3D.new()
 	var shape = BoxShape3D.new()
-	shape.size = Vector3(6, 2.5, 2.4)
+	shape.size = Vector3(5, 4, 4)
 	coll.shape = shape
-	coll.position.y = 1.25
+	coll.position.y = 2
+	body.add_child(coll)
+	derrick.add_child(body)
+
+
+func _create_loading_dock() -> void:
+	# Shipping containers on east side
+	_create_container(Vector3(18, 0, 5), 0.0, _container_red)
+	_create_container(Vector3(20, 0, -3), 0.2, _container_blue)
+	_create_container(Vector3(16, 2.6, 5), 0.0, _container_green)  # Stacked
+	_create_container(Vector3(22, 0, 10), -0.3, _container_red)
+	_create_container(Vector3(15, 0, -10), 0.5, _container_blue)
+
+
+func _create_container(pos: Vector3, rot_y: float, mat: StandardMaterial3D) -> void:
+	var container = Node3D.new()
+	container.position = pos
+	container.rotation.y = rot_y
+	_map.add_child(container)
+
+	var mesh = BoxMesh.new()
+	mesh.size = Vector3(6, 2.6, 2.4)
+
+	var inst = MeshInstance3D.new()
+	inst.mesh = mesh
+	inst.position.y = 1.3
+	inst.material_override = mat
+	container.add_child(inst)
+
+	# Corrugation detail
+	for i in range(-2, 3):
+		var ridge = BoxMesh.new()
+		ridge.size = Vector3(0.05, 2.4, 2.5)
+
+		var r = MeshInstance3D.new()
+		r.mesh = ridge
+		r.position = Vector3(i * 1.3, 1.3, 0)
+		r.material_override = _metal_dark
+		container.add_child(r)
+
+	# Collision
+	var body = StaticBody3D.new()
+	var coll = CollisionShape3D.new()
+	var shape = BoxShape3D.new()
+	shape.size = Vector3(6, 2.6, 2.4)
+	coll.shape = shape
+	coll.position.y = 1.3
 	body.add_child(coll)
 	container.add_child(body)
 
 
-func _create_fuel_depot() -> void:
-	# South area with fuel tanks and barriers
-	var depot = Node3D.new()
-	depot.name = "FuelDepot"
-	depot.position = Vector3(0, 0, 22)
-	_map_container.add_child(depot)
-
-	# Fuel tanks
+func _create_fuel_area() -> void:
+	# Fuel tanks in south area
 	for i in range(3):
-		var tank_mesh = CylinderMesh.new()
-		tank_mesh.top_radius = 1.5
-		tank_mesh.bottom_radius = 1.5
-		tank_mesh.height = 3.5
+		var tank = Node3D.new()
+		tank.position = Vector3(-5 + i * 5, 0, 18)
+		_map.add_child(tank)
 
-		var tank = MeshInstance3D.new()
-		tank.mesh = tank_mesh
-		tank.position = Vector3(-6 + i * 6, 1.75, 0)
-		tank.material_override = _rust_mat
-		depot.add_child(tank)
+		var mesh = CylinderMesh.new()
+		mesh.top_radius = 1.2
+		mesh.bottom_radius = 1.2
+		mesh.height = 2.8
 
-		# Tank collision
+		var inst = MeshInstance3D.new()
+		inst.mesh = mesh
+		inst.position.y = 1.4
+		inst.material_override = _metal_rust
+		tank.add_child(inst)
+
 		var body = StaticBody3D.new()
 		var coll = CollisionShape3D.new()
 		var shape = CylinderShape3D.new()
-		shape.radius = 1.5
-		shape.height = 3.5
+		shape.radius = 1.2
+		shape.height = 2.8
 		coll.shape = shape
-		coll.position = Vector3(-6 + i * 6, 1.75, 0)
+		coll.position.y = 1.4
 		body.add_child(coll)
-		depot.add_child(body)
-
-	# Small building/shack
-	var shack_mesh = BoxMesh.new()
-	shack_mesh.size = Vector3(4, 3, 3)
-
-	var shack = MeshInstance3D.new()
-	shack.mesh = shack_mesh
-	shack.position = Vector3(12, 1.5, 2)
-	shack.material_override = _concrete_mat
-	depot.add_child(shack)
-
-	var shack_body = StaticBody3D.new()
-	var shack_coll = CollisionShape3D.new()
-	var shack_shape = BoxShape3D.new()
-	shack_shape.size = Vector3(4, 3, 3)
-	shack_coll.shape = shack_shape
-	shack_coll.position = Vector3(12, 1.5, 2)
-	shack_body.add_child(shack_coll)
-	depot.add_child(shack_body)
+		tank.add_child(body)
 
 
-func _create_barriers_and_cover() -> void:
-	# Jersey barriers and small cover pieces
-	var barrier_positions = [
-		Vector3(5, 0, 12),
-		Vector3(-5, 0, 10),
-		Vector3(10, 0, -10),
-		Vector3(-12, 0, 5),
-		Vector3(3, 0, -15),
-		Vector3(-8, 0, -18),
-	]
+func _create_maintenance() -> void:
+	# Small maintenance shed
+	var shed = Node3D.new()
+	shed.name = "Maintenance"
+	shed.position = Vector3(-15, 0, 8)
+	_map.add_child(shed)
 
-	for pos in barrier_positions:
-		_create_jersey_barrier(pos, randf() * TAU)
-
-	# Concrete blocks
-	var block_positions = [
-		Vector3(12, 0, 0),
-		Vector3(-10, 0, 12),
-		Vector3(0, 0, 8),
-	]
-
-	for pos in block_positions:
-		_create_concrete_block(pos)
-
-
-func _create_jersey_barrier(pos: Vector3, rot: float) -> void:
 	var mesh = BoxMesh.new()
-	mesh.size = Vector3(3.5, 0.9, 0.6)
+	mesh.size = Vector3(4, 2.5, 3)
 
-	var barrier = MeshInstance3D.new()
-	barrier.mesh = mesh
-	barrier.position = pos + Vector3(0, 0.45, 0)
-	barrier.rotation.y = rot
-	barrier.material_override = _concrete_mat
-	_map_container.add_child(barrier)
+	var inst = MeshInstance3D.new()
+	inst.mesh = mesh
+	inst.position.y = 1.25
+	inst.material_override = _metal_rust
+	shed.add_child(inst)
 
 	var body = StaticBody3D.new()
 	var coll = CollisionShape3D.new()
 	var shape = BoxShape3D.new()
-	shape.size = Vector3(3.5, 0.9, 0.6)
+	shape.size = Vector3(4, 2.5, 3)
 	coll.shape = shape
-	coll.position = pos + Vector3(0, 0.45, 0)
-	coll.rotation.y = rot
+	coll.position.y = 1.25
 	body.add_child(coll)
-	_map_container.add_child(body)
+	shed.add_child(body)
 
 
-func _create_concrete_block(pos: Vector3) -> void:
+func _create_perimeter() -> void:
+	# Rusty walls around parts of the perimeter
+	_create_wall(Vector3(-25, 0, 0), 50, 3, 0.15, 0)  # West wall
+	_create_wall(Vector3(0, 0, -25), 50, 3, 0.15, PI/2)  # North wall
+	_create_wall(Vector3(25, 0, 0), 30, 3, 0.15, 0)  # East wall partial
+	_create_wall(Vector3(0, 0, 25), 40, 3, 0.15, PI/2)  # South wall
+
+
+func _create_wall(pos: Vector3, length: float, height: float, thickness: float, rot_y: float) -> void:
+	var wall = Node3D.new()
+	wall.position = pos
+	wall.rotation.y = rot_y
+	_map.add_child(wall)
+
 	var mesh = BoxMesh.new()
-	mesh.size = Vector3(1.5, 1.0, 1.5)
+	mesh.size = Vector3(thickness, height, length)
 
-	var block = MeshInstance3D.new()
-	block.mesh = mesh
-	block.position = pos + Vector3(0, 0.5, 0)
-	block.material_override = _concrete_mat
-	_map_container.add_child(block)
+	var inst = MeshInstance3D.new()
+	inst.mesh = mesh
+	inst.position.y = height / 2
+	inst.material_override = _wall_rust
+	wall.add_child(inst)
 
 	var body = StaticBody3D.new()
 	var coll = CollisionShape3D.new()
 	var shape = BoxShape3D.new()
-	shape.size = Vector3(1.5, 1.0, 1.5)
+	shape.size = Vector3(thickness, height, length)
 	coll.shape = shape
-	coll.position = pos + Vector3(0, 0.5, 0)
+	coll.position.y = height / 2
 	body.add_child(coll)
-	_map_container.add_child(body)
+	wall.add_child(body)
 
 
-func _create_tunnel_entrances() -> void:
-	# Small tunnel/cover areas near the tower base
-	var tunnel_positions = [
-		Vector3(3, 0, 2),
-		Vector3(-3, 0, -2),
+func _create_tower_maze() -> void:
+	# Low walls/barriers creating crawl spaces under tower
+	var barriers = [
+		{"pos": Vector3(2, 0, 1.5), "size": Vector3(3, 1.2, 0.3)},
+		{"pos": Vector3(-2, 0, -1.5), "size": Vector3(3, 1.2, 0.3)},
+		{"pos": Vector3(1.5, 0, -2), "size": Vector3(0.3, 1.2, 2.5)},
+		{"pos": Vector3(-1.5, 0, 2), "size": Vector3(0.3, 1.2, 2.5)},
 	]
 
-	for pos in tunnel_positions:
-		var tunnel_mesh = BoxMesh.new()
-		tunnel_mesh.size = Vector3(2, 1.2, 3)
+	for b in barriers:
+		var mesh = BoxMesh.new()
+		mesh.size = b.size
 
-		var tunnel = MeshInstance3D.new()
-		tunnel.mesh = tunnel_mesh
-		tunnel.position = pos + Vector3(0, 0.6, 0)
-		tunnel.material_override = _concrete_mat
-		_map_container.add_child(tunnel)
+		var inst = MeshInstance3D.new()
+		inst.mesh = mesh
+		inst.position = b.pos + Vector3(0, b.size.y / 2, 0)
+		inst.material_override = _concrete
+		_map.add_child(inst)
 
 		var body = StaticBody3D.new()
 		var coll = CollisionShape3D.new()
 		var shape = BoxShape3D.new()
-		shape.size = Vector3(2, 1.2, 3)
+		shape.size = b.size
 		coll.shape = shape
-		coll.position = pos + Vector3(0, 0.6, 0)
+		coll.position = b.pos + Vector3(0, b.size.y / 2, 0)
 		body.add_child(coll)
-		_map_container.add_child(body)
+		_map.add_child(body)
 
 
 func clear_map() -> void:
-	if _map_container:
-		_map_container.queue_free()
-		_map_container = null
+	if _map:
+		_map.queue_free()
+		_map = null
