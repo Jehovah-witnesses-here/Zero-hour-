@@ -10,6 +10,8 @@ signal loading_started(message: String)
 signal loading_complete
 signal loading_failed(message: String)
 signal mode_changed(mode: int)
+signal wave_started(wave_number: int, zombie_count: int)
+signal wave_complete(wave_number: int)
 
 # Game modes from design doc
 enum GameMode { NONE, SURVIVAL, EXCLUSION_ZONE }
@@ -39,6 +41,9 @@ var loading_message: String = ""
 # Map settings
 var render_distance: float = 200.0
 
+var _zombie_count: int = 0
+var _wave_number: int = 0
+var _zombie_script: GDScript = null
 
 var _has_started: bool = false
 
@@ -118,6 +123,10 @@ func _start_demo_mode() -> void:
 	game_started.emit()
 
 	print("[GameManager] Demo mode ready! Walk around with the joystick.")
+
+	# Spawn first zombie wave after a short orientation delay
+	await get_tree().create_timer(3.0).timeout
+	_spawn_zombie_wave(5)
 
 
 ## Create demo buildings for testing (no GPS/OSM needed)
@@ -345,3 +354,43 @@ func get_mode() -> GameMode:
 
 func get_map_type() -> MapType:
 	return current_map_type
+
+
+func _spawn_zombie_wave(count: int) -> void:
+	if not _zombie_script:
+		_zombie_script = load("res://scripts/zombie.gd")
+	if not _zombie_script:
+		push_error("[GameManager] Could not load zombie.gd")
+		return
+
+	_zombie_count = count
+	_wave_number += 1
+	wave_started.emit(_wave_number, count)
+	print("[GameManager] Wave %d — spawning %d zombies" % [_wave_number, count])
+
+	var spawn_positions = [
+		Vector3(28, 1, 28), Vector3(-28, 1, 28), Vector3(28, 1, -28), Vector3(-28, 1, -28),
+		Vector3(0, 1, 32), Vector3(32, 1, 0), Vector3(-32, 1, 0), Vector3(0, 1, -32),
+	]
+
+	var scene_root = get_tree().current_scene
+	for i in count:
+		var zombie = CharacterBody3D.new()
+		zombie.set_script(_zombie_script)
+		scene_root.add_child(zombie)
+		var base_pos = spawn_positions[i % spawn_positions.size()]
+		zombie.global_position = Vector3(
+			base_pos.x + randf_range(-2.0, 2.0),
+			base_pos.y,
+			base_pos.z + randf_range(-2.0, 2.0)
+		)
+		zombie.died.connect(_on_zombie_died)
+
+
+func _on_zombie_died() -> void:
+	_zombie_count -= 1
+	if _zombie_count <= 0:
+		wave_complete.emit(_wave_number)
+		print("[GameManager] Wave %d complete!" % _wave_number)
+		await get_tree().create_timer(4.0).timeout
+		_spawn_zombie_wave(5 + _wave_number * 3)

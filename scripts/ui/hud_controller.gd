@@ -14,6 +14,8 @@ var player: CharacterBody3D = null
 var building_generator: Node3D = null
 
 var fps_timer: float = 0.0
+var health_label: Label = null
+var wave_label: Label = null
 
 
 func _ready() -> void:
@@ -34,6 +36,51 @@ func _find_references() -> void:
 
 	if has_node("DebugPanel"):
 		$DebugPanel.visible = true
+
+	_create_health_ui()
+	_connect_gameplay_signals()
+
+
+func _create_health_ui() -> void:
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0, 0, 0, 0.5)
+	style.corner_radius_top_left = 8
+	style.corner_radius_top_right = 8
+	style.corner_radius_bottom_left = 8
+	style.corner_radius_bottom_right = 8
+	style.content_margin_left = 10.0
+	style.content_margin_top = 4.0
+	style.content_margin_right = 10.0
+	style.content_margin_bottom = 4.0
+
+	health_label = Label.new()
+	health_label.text = "HP: 100"
+	health_label.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	health_label.position = Vector2(20, -70)
+	health_label.add_theme_font_size_override("font_size", 22)
+	health_label.add_theme_stylebox_override("normal", style)
+	add_child(health_label)
+
+	wave_label = Label.new()
+	wave_label.text = ""
+	wave_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	wave_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	wave_label.position = Vector2(-160, 60)
+	wave_label.add_theme_font_size_override("font_size", 18)
+	wave_label.add_theme_stylebox_override("normal", style)
+	add_child(wave_label)
+
+
+func _connect_gameplay_signals() -> void:
+	if player and player.has_signal("health_changed"):
+		player.health_changed.connect(_on_health_changed)
+	if player and player.has_signal("player_died"):
+		player.player_died.connect(_on_player_died)
+	if game_manager:
+		if game_manager.has_signal("wave_started"):
+			game_manager.wave_started.connect(_on_wave_started)
+		if game_manager.has_signal("wave_complete"):
+			game_manager.wave_complete.connect(_on_wave_complete)
 
 
 func _connect_signals() -> void:
@@ -72,6 +119,33 @@ func _on_loaded() -> void:
 		loading_panel.visible = false
 	if gps_label:
 		gps_label.text = "DEMO MODE"
+
+
+func _on_health_changed(current: float, maximum: float) -> void:
+	if health_label:
+		health_label.text = "HP: %d" % int(current)
+		if current < maximum * 0.3:
+			health_label.modulate = Color(1, 0.3, 0.3)
+		elif current < maximum * 0.6:
+			health_label.modulate = Color(1, 0.8, 0.2)
+		else:
+			health_label.modulate = Color(1, 1, 1)
+
+
+func _on_player_died() -> void:
+	if health_label:
+		health_label.text = "YOU DIED"
+		health_label.modulate = Color(1, 0.1, 0.1)
+
+
+func _on_wave_started(wave_number: int, zombie_count: int) -> void:
+	if wave_label:
+		wave_label.text = "WAVE %d  [%d zombies]" % [wave_number, zombie_count]
+
+
+func _on_wave_complete(wave_number: int) -> void:
+	if wave_label:
+		wave_label.text = "WAVE %d CLEAR!" % wave_number
 
 
 func _on_buildings_ready() -> void:
