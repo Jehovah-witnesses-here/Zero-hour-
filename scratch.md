@@ -1,5 +1,5 @@
 **Now:** T1 headless test harness built (tests/test_runner.tscn); fixed 3 zombie bugs + spawn fling
-**Next:** PENDING: read Sonnet GPU audit result → plan 1b-1e; build T2 in-APK benchmark; then ADS 2a
+**Next:** PENDING: build T2 in-APK benchmark (baseline FPS) → GPU batch 1 (effects off, shadow 50, scale .67)
 **Done:** Features 1-3, landscape UI, shoot-button bug, normal maps MTL, truck/heli/barrels; 2026-10-21 T1 tests
 
 ## How to test (phone only — never the PC without asking)
