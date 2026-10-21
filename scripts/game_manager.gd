@@ -12,6 +12,7 @@ signal loading_failed(message: String)
 signal mode_changed(mode: int)
 signal wave_started(wave_number: int, zombie_count: int)
 signal wave_complete(wave_number: int)
+signal score_changed(score: int)
 
 # Game modes from design doc
 enum GameMode { NONE, SURVIVAL, EXCLUSION_ZONE }
@@ -46,6 +47,7 @@ var _wave_number: int = 0
 var _zombie_script: GDScript = null
 
 var _has_started: bool = false
+var score: int = 0
 
 
 func _ready() -> void:
@@ -111,9 +113,13 @@ func _start_demo_mode() -> void:
 		if street_props:
 			street_props.generate_demo_props()
 
-	# Position player near the tower
+	# Position player at map spawn point
 	if player:
-		player.global_position = Vector3(10, 2, 10)
+		var rust_map = get_tree().get_first_node_in_group("rust_map")
+		if rust_map and rust_map.has_method("get_player_spawn"):
+			player.global_position = rust_map.get_player_spawn()
+		else:
+			player.global_position = Vector3(0, 3, 0)
 
 	# Done loading
 	is_loading = false
@@ -124,9 +130,8 @@ func _start_demo_mode() -> void:
 
 	print("[GameManager] Demo mode ready! Walk around with the joystick.")
 
-	# Spawn first zombie wave after a short orientation delay
-	await get_tree().create_timer(3.0).timeout
-	_spawn_zombie_wave(5)
+	# Zombie waves disabled for map testing
+	pass # _spawn_zombie_wave(5)
 
 
 ## Create demo buildings for testing (no GPS/OSM needed)
@@ -268,7 +273,7 @@ func _on_osm_buildings(buildings: Array) -> void:
 		building_generator.create_ground(render_distance * 2)
 
 	if player and gps_manager:
-		player.global_position = Vector3(0, 2, 0)
+		player.global_position = Vector3(0, 3, 0)
 
 	is_loading = false
 	current_state = GameState.PLAYING
@@ -387,7 +392,9 @@ func _spawn_zombie_wave(count: int) -> void:
 		zombie.died.connect(_on_zombie_died)
 
 
-func _on_zombie_died() -> void:
+func _on_zombie_died(points: int) -> void:
+	score += points
+	score_changed.emit(score)
 	_zombie_count -= 1
 	if _zombie_count <= 0:
 		wave_complete.emit(_wave_number)

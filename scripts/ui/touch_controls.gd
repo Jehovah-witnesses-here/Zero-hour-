@@ -7,7 +7,7 @@ signal run_toggled(is_running: bool)
 signal action_pressed(action_name: String)
 
 # Joystick settings
-@export var joystick_radius: float = 80.0
+@export var joystick_radius: float = 90.0
 @export var joystick_deadzone: float = 0.15
 @export var joystick_color: Color = Color(1, 1, 1, 0.25)
 @export var joystick_knob_color: Color = Color(1, 1, 1, 0.55)
@@ -30,6 +30,7 @@ var joystick_knob: Control = null
 var run_button: Button = null
 var action_button: Button = null
 var jump_button: Button = null
+var reload_button: Button = null
 
 
 func _ready() -> void:
@@ -47,7 +48,7 @@ func _create_ui_elements() -> void:
 
 	# Joystick base (bottom-left)
 	joystick_base = _create_circle_control(joystick_radius, joystick_color)
-	joystick_base.position = Vector2(150, -150)
+	joystick_base.position = Vector2(130, -140)
 	joystick_base.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	joystick_base.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(joystick_base)
@@ -59,44 +60,95 @@ func _create_ui_elements() -> void:
 	joystick_knob.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(joystick_knob)
 
-	# Run button (bottom-right)
+	# FIRE button — bottom-right, most reachable
+	action_button = Button.new()
+	action_button.text = "FIRE"
+	action_button.custom_minimum_size = Vector2(110, 80)
+	action_button.position = Vector2(-130, -100)
+	action_button.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	action_button.pressed.connect(_on_action_pressed)
+	add_child(action_button)
+
+	# JUMP button — above FIRE
+	jump_button = Button.new()
+	jump_button.text = "JUMP"
+	jump_button.custom_minimum_size = Vector2(110, 80)
+	jump_button.position = Vector2(-130, -200)
+	jump_button.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	jump_button.pressed.connect(_on_jump_pressed)
+	add_child(jump_button)
+
+	# RUN button — second column, lower
 	run_button = Button.new()
 	run_button.text = "RUN"
-	run_button.custom_minimum_size = Vector2(100, 60)
-	run_button.position = Vector2(-120, -230)
+	run_button.custom_minimum_size = Vector2(110, 80)
+	run_button.position = Vector2(-260, -100)
 	run_button.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	run_button.toggle_mode = true
 	run_button.toggled.connect(_on_run_toggled)
 	add_child(run_button)
 
-	# Jump button (bottom-right, left of run)
-	jump_button = Button.new()
-	jump_button.text = "JUMP"
-	jump_button.custom_minimum_size = Vector2(100, 60)
-	jump_button.position = Vector2(-240, -230)
-	jump_button.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	jump_button.pressed.connect(_on_jump_pressed)
-	add_child(jump_button)
+	# RELOAD button — second column, upper
+	reload_button = Button.new()
+	reload_button.text = "RELOAD"
+	reload_button.custom_minimum_size = Vector2(110, 80)
+	reload_button.position = Vector2(-260, -200)
+	reload_button.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	reload_button.pressed.connect(_on_reload_pressed)
+	add_child(reload_button)
 
-	# Action button (bottom-right, lower)
-	action_button = Button.new()
-	action_button.text = "ACTION"
-	action_button.custom_minimum_size = Vector2(100, 60)
-	action_button.position = Vector2(-120, -150)
-	action_button.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	action_button.pressed.connect(_on_action_pressed)
-	add_child(action_button)
+	# Crosshair — dot + four lines
+	var ch_root = Control.new()
+	ch_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	ch_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(ch_root)
 
-	# Crosshair (center of screen)
-	var crosshair = Label.new()
-	crosshair.text = "+"
-	crosshair.set_anchors_preset(Control.PRESET_CENTER)
-	crosshair.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	crosshair.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	crosshair.add_theme_font_size_override("font_size", 28)
-	crosshair.modulate = Color(1, 1, 1, 0.75)
-	crosshair.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(crosshair)
+	var ch = ColorRect.new()
+	ch.color = Color(1, 1, 1, 0.85)
+	ch.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ch.set_anchors_preset(Control.PRESET_CENTER)
+
+	# Center dot
+	var dot = ColorRect.new()
+	dot.color = Color(1, 1, 1, 0.9)
+	dot.size = Vector2(4, 4)
+	dot.set_anchors_preset(Control.PRESET_CENTER)
+	dot.position = Vector2(-2, -2)
+	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ch_root.add_child(dot)
+
+	# Top line
+	var top = ColorRect.new(); top.color = Color(1,1,1,0.8); top.size = Vector2(2, 10)
+	top.set_anchors_preset(Control.PRESET_CENTER); top.position = Vector2(-1, -22)
+	top.mouse_filter = Control.MOUSE_FILTER_IGNORE; ch_root.add_child(top)
+	# Bottom line
+	var bot = ColorRect.new(); bot.color = Color(1,1,1,0.8); bot.size = Vector2(2, 10)
+	bot.set_anchors_preset(Control.PRESET_CENTER); bot.position = Vector2(-1, 12)
+	bot.mouse_filter = Control.MOUSE_FILTER_IGNORE; ch_root.add_child(bot)
+	# Left line
+	var lft = ColorRect.new(); lft.color = Color(1,1,1,0.8); lft.size = Vector2(10, 2)
+	lft.set_anchors_preset(Control.PRESET_CENTER); lft.position = Vector2(-22, -1)
+	lft.mouse_filter = Control.MOUSE_FILTER_IGNORE; ch_root.add_child(lft)
+	# Right line
+	var rgt = ColorRect.new(); rgt.color = Color(1,1,1,0.8); rgt.size = Vector2(10, 2)
+	rgt.set_anchors_preset(Control.PRESET_CENTER); rgt.position = Vector2(12, -1)
+	rgt.mouse_filter = Control.MOUSE_FILTER_IGNORE; ch_root.add_child(rgt)
+	# Outer ring
+	var ring_panel = Panel.new()
+	ring_panel.custom_minimum_size = Vector2(44, 44)
+	ring_panel.size = Vector2(44, 44)
+	ring_panel.set_anchors_preset(Control.PRESET_CENTER)
+	ring_panel.position = Vector2(-22, -22)
+	ring_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var ring_style = StyleBoxFlat.new()
+	ring_style.bg_color = Color.TRANSPARENT
+	ring_style.border_color = Color(1, 1, 1, 0.3)
+	ring_style.border_width_top = 1; ring_style.border_width_bottom = 1
+	ring_style.border_width_left = 1; ring_style.border_width_right = 1
+	ring_style.corner_radius_top_left = 22; ring_style.corner_radius_top_right = 22
+	ring_style.corner_radius_bottom_left = 22; ring_style.corner_radius_bottom_right = 22
+	ring_panel.add_theme_stylebox_override("panel", ring_style)
+	ch_root.add_child(ring_panel)
 
 
 func _create_circle_control(radius: float, color: Color) -> Control:
@@ -194,7 +246,14 @@ func _on_jump_pressed() -> void:
 
 
 func _on_action_pressed() -> void:
+	if player and player.has_method("_shoot"):
+		player._shoot()
 	action_pressed.emit("interact")
+
+
+func _on_reload_pressed() -> void:
+	if player and player.has_method("_start_reload"):
+		player._start_reload()
 
 
 func set_visible_controls(show: bool) -> void:
@@ -203,6 +262,8 @@ func set_visible_controls(show: bool) -> void:
 	run_button.visible = show
 	jump_button.visible = show
 	action_button.visible = show
+	if reload_button:
+		reload_button.visible = show
 
 
 func get_movement() -> Vector2:

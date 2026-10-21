@@ -1,7 +1,7 @@
 extends CharacterBody3D
 ## Zombie enemy - chases player, deals melee damage, takes raycast hits
 
-signal died
+signal died(points: int)
 
 var max_health: float = 100.0
 var health: float = 100.0
@@ -9,6 +9,7 @@ var move_speed: float = 2.0
 var attack_damage: float = 10.0
 var attack_range: float = 1.8
 var attack_cooldown: float = 1.5
+var points: int = 100
 
 var _player: CharacterBody3D = null
 var _attack_timer: float = 0.0
@@ -54,6 +55,18 @@ func _build_visuals() -> void:
 	col.shape = shape
 	col.position.y = 0.7
 	add_child(col)
+
+	# Head hitbox — separate Area3D so raycast can detect headshots
+	var head_area = Area3D.new()
+	head_area.add_to_group("zombie_heads")
+	head_area.set_meta("zombie", self)
+	var head_col = CollisionShape3D.new()
+	var head_shape = SphereShape3D.new()
+	head_shape.radius = 0.25
+	head_col.shape = head_shape
+	head_area.add_child(head_col)
+	head_area.position.y = 1.62
+	add_child(head_area)
 
 
 func _physics_process(delta: float) -> void:
@@ -110,7 +123,7 @@ func take_damage(amount: float) -> void:
 
 func _die() -> void:
 	_is_dead = true
-	died.emit()
+	died.emit(points)
 	var tween = create_tween()
 	tween.tween_property(self, "position:y", position.y - 2.0, 0.8)
 	tween.tween_callback(queue_free)

@@ -49,3 +49,6 @@ dist/
 # Temporary files
 *.tmp
 *.temp
+
+# Ripped/large map data — never commit
+assets/maps/
