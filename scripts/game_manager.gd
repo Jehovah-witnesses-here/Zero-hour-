@@ -382,13 +382,15 @@ func _spawn_zombie_wave(count: int) -> void:
 	for i in count:
 		var zombie = CharacterBody3D.new()
 		zombie.set_script(_zombie_script)
-		scene_root.add_child(zombie)
 		var base_pos = spawn_positions[i % spawn_positions.size()]
-		zombie.global_position = Vector3(
+		# Set position before add_child — spawning at the origin first lets the
+		# physics engine treat the zombie as a moving platform and fling the player
+		zombie.position = Vector3(
 			base_pos.x + randf_range(-2.0, 2.0),
 			base_pos.y,
 			base_pos.z + randf_range(-2.0, 2.0)
 		)
+		scene_root.add_child(zombie)
 		zombie.died.connect(_on_zombie_died)
 
 

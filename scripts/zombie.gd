@@ -11,6 +11,9 @@ var attack_range: float = 1.8
 var attack_cooldown: float = 1.5
 var points: int = 100
 
+const BODY_COLOR := Color(0.25, 0.38, 0.15)
+const HIT_COLOR := Color(0.9, 0.1, 0.1)
+
 var _player: CharacterBody3D = null
 var _attack_timer: float = 0.0
 var _is_dead: bool = false
@@ -34,7 +37,7 @@ func _build_visuals() -> void:
 	body_mesh.mesh = capsule
 	body_mesh.position.y = 0.7
 	_body_mat = StandardMaterial3D.new()
-	_body_mat.albedo_color = Color(0.25, 0.38, 0.15)
+	_body_mat.albedo_color = BODY_COLOR
 	body_mesh.material_override = _body_mat
 	add_child(body_mesh)
 
@@ -111,14 +114,15 @@ func take_damage(amount: float) -> void:
 	if _is_dead:
 		return
 	health -= amount
-	if _body_mat:
-		var orig = _body_mat.albedo_color
-		_body_mat.albedo_color = Color(0.9, 0.1, 0.1)
-		await get_tree().create_timer(0.1).timeout
-		if is_instance_valid(self) and not _is_dead:
-			_body_mat.albedo_color = orig
+	# Resolve death before the hit flash awaits, so callers see _is_dead immediately
 	if health <= 0.0:
 		_die()
+		return
+	if _body_mat:
+		_body_mat.albedo_color = HIT_COLOR
+		await get_tree().create_timer(0.1).timeout
+		if is_instance_valid(self) and not _is_dead:
+			_body_mat.albedo_color = BODY_COLOR
 
 
 func _die() -> void:
