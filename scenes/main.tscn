@@ -31,14 +31,14 @@ reflected_light_source = 2
 tonemap_mode = 2
 tonemap_exposure = 1.0
 tonemap_white = 1.2
-ssao_enabled = true
+ssao_enabled = false
 ssao_radius = 1.5
 ssao_intensity = 2.0
 ssao_power = 1.5
-ssil_enabled = true
+ssil_enabled = false
 ssil_radius = 3.0
 ssil_intensity = 0.8
-glow_enabled = true
+glow_enabled = false
 glow_intensity = 0.2
 glow_strength = 0.5
 glow_bloom = 0.08
@@ -55,7 +55,7 @@ adjustment_contrast = 1.05
 adjustment_saturation = 1.05
 
 [sub_resource type="CameraAttributesPractical" id="CameraAttributesPractical_1"]
-auto_exposure_enabled = true
+auto_exposure_enabled = false
 auto_exposure_min_sensitivity = 50.0
 auto_exposure_max_sensitivity = 400.0
 
@@ -72,7 +72,7 @@ light_energy = 1.2
 shadow_enabled = true
 shadow_bias = 0.05
 shadow_normal_bias = 2.0
-directional_shadow_max_distance = 150.0
+directional_shadow_max_distance = 50.0
 directional_shadow_fade_start = 0.8
 
 [node name="FillLight" type="DirectionalLight3D" parent="."]

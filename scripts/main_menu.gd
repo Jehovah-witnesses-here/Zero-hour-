@@ -28,6 +28,15 @@ func _ready() -> void:
 	if quit_button:
 		quit_button.pressed.connect(_on_quit_pressed)
 
+	# Benchmark run: fixed camera spin, saves frame times to Download/
+	var bench_button := Button.new()
+	bench_button.text = "BENCHMARK"
+	bench_button.custom_minimum_size = Vector2(0, 50)
+	bench_button.add_theme_font_size_override("font_size", 18)
+	bench_button.pressed.connect(func(): Benchmark.start())
+	$VBoxContainer.add_child(bench_button)
+	$VBoxContainer.move_child(bench_button, quit_button.get_index())
+
 	if version_label:
 		version_label.text = "v" + CURRENT_VERSION
 

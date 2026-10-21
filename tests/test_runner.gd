@@ -5,6 +5,7 @@ extends Node3D
 
 const PLAYER_SCENE := preload("res://scenes/player.tscn")
 const ZOMBIE_SCRIPT := preload("res://scripts/zombie.gd")
+const BENCH_SCRIPT := preload("res://scripts/benchmark.gd")
 
 var _passed: int = 0
 var _failed: int = 0
@@ -183,3 +184,20 @@ func test_player_dies_at_zero() -> void:
 	p.player_died.connect(func(): died[0] = true)
 	p.take_damage(150.0)
 	check(died[0] and p.current_health == 0.0, "player should die and clamp to 0")
+
+
+# --- benchmark ---------------------------------------------------------------
+
+func test_benchmark_summary_maths() -> void:
+	# 99 frames at 10 ms + 1 frame at 100 ms
+	var frames := PackedFloat32Array()
+	for i in 99:
+		frames.append(10.0)
+	frames.append(100.0)
+	var s: Dictionary = BENCH_SCRIPT.summarize(frames, PackedInt32Array([50, 150]))
+	check(s.frames == 100, "frames %d" % s.frames)
+	check(is_equal_approx(s.avg_fps, 1000.0 * 100 / 1090.0), "avg_fps %s" % s.avg_fps)
+	check(is_equal_approx(s.p50_ms, 10.0), "p50 %s" % s.p50_ms)
+	check(is_equal_approx(s.low1_fps, 10.0), "1%% low should be the 100 ms frame, got %s" % s.low1_fps)
+	check(s.avg_draws == 100, "avg draws %d" % s.avg_draws)
+	check(BENCH_SCRIPT.summarize(PackedFloat32Array(), PackedInt32Array()).frames == 0, "empty run")
