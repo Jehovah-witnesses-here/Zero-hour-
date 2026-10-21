@@ -35,7 +35,8 @@ var rust_map: Node3D = null
 @onready var gps_manager = get_node_or_null("/root/GPSManager")
 
 # Loading settings
-var initialization_timeout: float = 10.0  # seconds before fallback
+var initialization_timeout: float = 45.0  # seconds before fallback (allows a 2nd Overpass server)
+var hometown_query: String = ""  # postcode/address typed in the lobby; empty = IP location
 var is_loading: bool = false
 var loading_message: String = ""
 
@@ -250,9 +251,41 @@ func start_real_world_mode() -> void:
 	var timeout_timer = get_tree().create_timer(initialization_timeout)
 	timeout_timer.timeout.connect(_on_initialization_timeout)
 
-	# Request GPS
-	if gps_manager.has_method("_request_android_permission"):
-		gps_manager._request_android_permission()
+	# This build has no Android location plugin (GPSManager only stubs it), so look the
+	# place up instead: typed postcode/address via Nominatim, else rough IP location.
+	_lookup_location(hometown_query)
+
+
+func _lookup_location(query: String) -> void:
+	var http := HTTPRequest.new()
+	add_child(http)
+	var url := "https://ipwho.is/"
+	if query.strip_edges() != "":
+		loading_started.emit("Finding " + query.strip_edges() + "...")
+		url = ("https://nominatim.openstreetmap.org/search?format=json&limit=1&q="
+			+ query.strip_edges().uri_encode())
+	else:
+		loading_started.emit("Finding your area...")
+	http.request_completed.connect(func(result: int, code: int, _headers, body: PackedByteArray):
+		http.queue_free()
+		var lat_lon := parse_location(body.get_string_from_utf8())
+		if result != HTTPRequest.RESULT_SUCCESS or code != 200 or lat_lon.is_empty():
+			_on_gps_error("couldn't find that location")
+			return
+		gps_manager.has_origin = false  # new place each game, not the first one ever
+		gps_manager._on_location_update(lat_lon[0], lat_lon[1], 0.0))
+	# Nominatim's usage policy requires an identifying User-Agent
+	http.request(url, PackedStringArray(["User-Agent: ZeroHour/0.4 (zombie game)"]))
+
+
+## Pulls [lat, lon] out of a Nominatim (array) or ipwho.is (object) reply; [] if none.
+static func parse_location(json_text: String) -> Array:
+	var data = JSON.parse_string(json_text)
+	if data is Array and not data.is_empty() and data[0] is Dictionary and data[0].has("lat"):
+		return [float(data[0].lat), float(data[0].lon)]
+	if data is Dictionary and data.get("success", false) and data.has("latitude"):
+		return [float(data.latitude), float(data.longitude)]
+	return []
 
 
 func _on_gps_location(latitude: float, longitude: float) -> void:

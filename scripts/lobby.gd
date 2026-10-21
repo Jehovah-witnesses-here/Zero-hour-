@@ -27,11 +27,28 @@ var selected_map: MapType = MapType.RUST
 @onready var game_manager = get_node_or_null("/root/GameManager")
 
 
+var place_edit: LineEdit = null  # postcode/address box, shown under the Hometown button
+
+
 func _ready() -> void:
+	_add_place_edit()
 	_create_styles()
 	_connect_buttons()
 	_update_selection_visuals()
 	_update_status()
+
+
+func _add_place_edit() -> void:
+	if not hometown_btn:
+		return
+	place_edit = LineEdit.new()
+	place_edit.placeholder_text = "Postcode or address (blank = near you)"
+	place_edit.custom_minimum_size = Vector2(0, 70)
+	place_edit.add_theme_font_size_override("font_size", 28)
+	place_edit.visible = false
+	hometown_btn.add_sibling(place_edit)
+	if game_manager:
+		place_edit.text = game_manager.hometown_query
 
 
 func _create_styles() -> void:
@@ -122,6 +139,7 @@ func _on_start_pressed() -> void:
 				game_manager.current_map_type = game_manager.MapType.DEMO
 			MapType.HOMETOWN:
 				game_manager.current_map_type = game_manager.MapType.REAL_WORLD
+				game_manager.hometown_query = place_edit.text if place_edit else ""
 
 	# Small delay for feedback
 	await get_tree().create_timer(0.3).timeout
@@ -146,6 +164,8 @@ func _update_selection_visuals() -> void:
 	if hometown_btn:
 		hometown_btn.add_theme_stylebox_override("normal",
 			style_selected if selected_map == MapType.HOMETOWN else style_unselected)
+	if place_edit:
+		place_edit.visible = selected_map == MapType.HOMETOWN
 
 
 func _update_status() -> void:

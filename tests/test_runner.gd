@@ -201,3 +201,14 @@ func test_benchmark_summary_maths() -> void:
 	check(is_equal_approx(s.low1_fps, 10.0), "1%% low should be the 100 ms frame, got %s" % s.low1_fps)
 	check(s.avg_draws == 100, "avg draws %d" % s.avg_draws)
 	check(BENCH_SCRIPT.summarize(PackedFloat32Array(), PackedInt32Array()).frames == 0, "empty run")
+
+
+func test_parse_location_replies() -> void:
+	var gm = get_node("/root/GameManager")
+	var nom: Array = gm.parse_location('[{"lat":"51.5013375","lon":"-0.1417955"}]')
+	check(nom.size() == 2 and is_equal_approx(nom[0], 51.5013375), "nominatim %s" % [nom])
+	var ip: Array = gm.parse_location('{"success":true,"latitude":53.4,"longitude":-2.9}')
+	check(ip.size() == 2 and is_equal_approx(ip[1], -2.9), "ipwho %s" % [ip])
+	check(gm.parse_location("[]").is_empty(), "no match -> empty")
+	check(gm.parse_location('{"success":false}').is_empty(), "ip fail -> empty")
+	check(gm.parse_location("not json").is_empty(), "junk -> empty")

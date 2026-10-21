@@ -9,7 +9,17 @@ signal fetch_started
 signal fetch_complete
 
 # Overpass API endpoint
-const OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+## Tried in order. Godot 4.2's TLS is 1.2-only, and overpass-api.de is TLS 1.3-only
+## (handshake -30592), so it can't be used. The OSM main API returns the same JSON
+## shape for a bbox and is the backup when the mail.ru Overpass mirror is busy (504).
+const OVERPASS_URLS := [
+	"https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+	OSM_API_URL,
+]
+const OSM_API_URL := "https://api.openstreetmap.org/api/0.6/map.json"
+const USER_AGENT := "User-Agent: ZeroHour/0.4 (zombie game)"  # OSM usage policy
+var _server_idx: int = 0
+var _last_query: String = ""
 
 # Cache for downloaded data
 var _building_cache: Dictionary = {}
@@ -25,7 +35,7 @@ var fetch_radius: float = 200.0  # meters
 
 func _ready() -> void:
 	_http_request = HTTPRequest.new()
-	_http_request.timeout = 30.0
+	_http_request.timeout = 20.0  # per server; next one is tried on failure
 	_http_request.request_completed.connect(_on_request_completed)
 	add_child(_http_request)
 
@@ -75,12 +85,23 @@ func _execute_query(query: String) -> void:
 	is_fetching = true
 	fetch_started.emit()
 
-	var url = OVERPASS_URL
-	var headers = ["Content-Type: application/x-www-form-urlencoded"]
+	_last_query = query
+	var url: String = OVERPASS_URLS[_server_idx]
+	var headers = ["Content-Type: application/x-www-form-urlencoded", USER_AGENT]
 	var body = "data=" + query.uri_encode()
+	var method := HTTPClient.METHOD_POST
+	if url == OSM_API_URL:
+		# Main API takes a bbox (lon/lat order), not an Overpass query
+		var dlat := fetch_radius / 111320.0
+		var dlon := fetch_radius / (111320.0 * cos(deg_to_rad(last_fetch_lat)))
+		url += "?bbox=%f,%f,%f,%f" % [last_fetch_lon - dlon, last_fetch_lat - dlat,
+			last_fetch_lon + dlon, last_fetch_lat + dlat]
+		headers = [USER_AGENT]
+		body = ""
+		method = HTTPClient.METHOD_GET
 
-	print("[OSM] Fetching data from Overpass API...")
-	var error = _http_request.request(url, headers, HTTPClient.METHOD_POST, body)
+	print("[OSM] Fetching data from ", url)
+	var error = _http_request.request(url, headers, method, body)
 
 	if error != OK:
 		is_fetching = false
@@ -91,13 +112,19 @@ func _on_request_completed(result: int, response_code: int, headers: PackedStrin
 	is_fetching = false
 	fetch_complete.emit()
 
-	if result != HTTPRequest.RESULT_SUCCESS:
-		fetch_error.emit("Request failed with result: " + str(result))
+	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
+		print("[OSM] ", OVERPASS_URLS[_server_idx], " failed: result ", result, " code ", response_code)
+		_server_idx += 1
+		if _server_idx < OVERPASS_URLS.size():
+			_execute_query(_last_query)
+			return
+		_server_idx = 0
+		if result != HTTPRequest.RESULT_SUCCESS:
+			fetch_error.emit("Request failed with result: " + str(result))
+		else:
+			fetch_error.emit("Server returned code: " + str(response_code))
 		return
-
-	if response_code != 200:
-		fetch_error.emit("Server returned code: " + str(response_code))
-		return
+	_server_idx = 0
 
 	var json_string = body.get_string_from_utf8()
 	var json = JSON.new()

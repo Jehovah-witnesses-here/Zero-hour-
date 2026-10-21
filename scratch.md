@@ -1,5 +1,5 @@
 **Now:** T1 headless test harness built (tests/test_runner.tscn); fixed 3 zombie bugs + spawn fling
-**Next:** user installs Download/zero-hour-v2.apk, tests Hometown (GPS) → then batch 2 textures (VRAM+mips)
+**Next:** fix Hometown stall after BuildingGen Created (create_ground?) — tests/hometown_live.tscn; user phone test v3 APK
 **Done:** Features 1-3, landscape UI, shoot-button bug, normal maps MTL, truck/heli/barrels; 2026-10-21 T1 tests
 
 ## How to test (phone only — never the PC without asking)
@@ -46,3 +46,8 @@ Fix order (measure with T2 before AND after each):
   new 36.4 fps / 20.1 1%-low / 435 draws / 351MB. Batch 1 = +57% avg fps. Still below 60 → textures next.
 - Fixed: Hometown (GPS/OSM) map never loaded — _try_start_game always ran demo; lobby's post-scene-change
   start_real_world_mode() call died with the freed lobby. Also _has_started never reset (2nd game never starts).
+- 2026-10-21 Hometown pt2: GPS NEVER WORKED (no Android location plugin; gps_manager stub `pass`). Now: lobby box
+  postcode/address → Nominatim; blank → ipwho.is IP location. overpass-api.de is TLS1.3-only, Godot 4.2 TLS1.2-only
+  (-30592) → servers now mail.ru Overpass then OSM main API map.json bbox. LIVE headless: lookup + download WORK
+  (24-26 buildings). OPEN: after "[BuildingGen] Created N" headless stalls before loading_complete (1 of 5 runs got
+  through); suspect create_ground/_create_road or buildings_ready never reaching listeners. tests/hometown_live.tscn.
