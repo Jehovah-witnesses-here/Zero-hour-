@@ -1,5 +1,5 @@
 **Now:** T1 headless test harness built (tests/test_runner.tscn); fixed 3 zombie bugs + spawn fling
-**Next:** PENDING: build T2 in-APK benchmark (baseline FPS) → GPU batch 1 (effects off, shadow 50, scale .67)
+**Next:** user runs APK BENCHMARK on Pixel → read Download/zerohour_bench_*.csv → batch 2 textures (VRAM+mips)
 **Done:** Features 1-3, landscape UI, shoot-button bug, normal maps MTL, truck/heli/barrels; 2026-10-21 T1 tests
 
 ## How to test (phone only — never the PC without asking)
@@ -32,3 +32,10 @@ Fix order (measure with T2 before AND after each):
 4. MED sun shadow: shadow on, max_distance 150 (main.tscn:72,75) → ~50.
 5. MED props: rust_props.gd new mesh+material per instance, ~170 rock spheres, _tex() :10 no cache, 0 MultiMesh.
    Camera far=500 (player.tscn:37), no visibility_range anywhere. Map = 1 MeshInstance (68 surfaces, no culling).
+
+## T2 benchmark + GPU batch 1 (2026-10-21, f609cfe)
+- Menu BENCHMARK button (or `godot4 --path . -- --bench`, auto-quits). Runs "old" (pre-pass settings) then
+  "new" (scene defaults), 3s warmup + 30s 2-turn spin each. CSV → Download/zerohour_bench_<profile>_*.csv.
+- Headless proves the path only (dummy renderer = 145fps, 0 draws). Real numbers need the phone.
+- Godot warns SSAO + SSIL only work on Forward+ → they never ran on Mobile; audit overstated them.
+- Batch 1 defaults: glow/auto-exposure off, shadow 50m, far 250, MSAA off, scale 0.75.

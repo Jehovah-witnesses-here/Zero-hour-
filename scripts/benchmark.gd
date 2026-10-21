@@ -105,6 +105,8 @@ func _finish_profile() -> void:
 		text += "%s: %.1f fps avg, %.1f fps 1%%-low, p95 %.1f ms, %d draws, %.0f MB VRAM\n" % [
 			r.profile, r.avg_fps, r.low1_fps, r.p95_ms, r.avg_draws, r.vram_mb]
 	_show_overlay(text + "Saved to Download/")
+	if "--bench" in OS.get_cmdline_user_args():
+		get_tree().quit()  # scripted run: exit so the caller gets control back
 
 
 func _env_node() -> WorldEnvironment:
