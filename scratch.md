@@ -1,5 +1,5 @@
 **Now:** T1 headless test harness built (tests/test_runner.tscn); fixed 3 zombie bugs + spawn fling
-**Next:** user runs APK BENCHMARK on Pixel → read Download/zerohour_bench_*.csv → batch 2 textures (VRAM+mips)
+**Next:** user installs Download/zero-hour-v2.apk, tests Hometown (GPS) → then batch 2 textures (VRAM+mips)
 **Done:** Features 1-3, landscape UI, shoot-button bug, normal maps MTL, truck/heli/barrels; 2026-10-21 T1 tests
 
 ## How to test (phone only — never the PC without asking)
