@@ -60,6 +60,8 @@ func _ready() -> void:
 func _on_node_added(node: Node) -> void:
 	# Check if main scene was loaded
 	if node.name == "Main" and not _has_started:
+		# GameManager is an autoload: re-arm when this game scene closes so the next one starts
+		node.tree_exited.connect(func(): _has_started = false, CONNECT_ONE_SHOT)
 		_try_start_game()
 
 
@@ -76,7 +78,12 @@ func _try_start_game() -> void:
 	if player and building_generator:
 		_has_started = true
 		print("[GameManager] Starting game...")
-		_start_demo_mode()
+		# The lobby only sets current_map_type; starting the right mode happens here,
+		# because the lobby node is freed by the scene change before it could.
+		if current_map_type == MapType.REAL_WORLD:
+			start_real_world_mode()
+		else:
+			_start_demo_mode()
 
 
 func _find_references() -> void:

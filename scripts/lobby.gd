@@ -126,17 +126,8 @@ func _on_start_pressed() -> void:
 	# Small delay for feedback
 	await get_tree().create_timer(0.3).timeout
 
-	# Load the game
-	if selected_map == MapType.HOMETOWN:
-		# GPS mode - will request permissions in game
-		get_tree().change_scene_to_file("res://scenes/main.tscn")
-		if game_manager:
-			# Delay to let scene load, then try GPS
-			await get_tree().create_timer(0.5).timeout
-			game_manager.start_real_world_mode()
-	else:
-		# Demo mode (Rust map)
-		get_tree().change_scene_to_file("res://scenes/main.tscn")
+	# Load the game; GameManager picks Rust or GPS mode from current_map_type
+	get_tree().change_scene_to_file("res://scenes/main.tscn")
 
 
 func _update_selection_visuals() -> void:

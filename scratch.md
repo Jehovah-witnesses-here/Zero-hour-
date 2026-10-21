@@ -42,3 +42,7 @@ Fix order (measure with T2 before AND after each):
 - APK build: `godot4 --headless --path . --export-debug "Android" build/android/zero-hour.apk` (~5 min).
   Godot can't run SDK apksigner → APK comes out UNSIGNED. Then: `zipalign -f -p 4 in out-aligned` +
   `apksigner sign --ks ~/.android/debug.keystore --ks-pass pass:android --ks-key-alias androiddebugkey`.
+- PIXEL 7 RESULT (2026-10-21): old 23.1 fps avg / 15.3 1%-low / 559 draws / 410MB VRAM →
+  new 36.4 fps / 20.1 1%-low / 435 draws / 351MB. Batch 1 = +57% avg fps. Still below 60 → textures next.
+- Fixed: Hometown (GPS/OSM) map never loaded — _try_start_game always ran demo; lobby's post-scene-change
+  start_real_world_mode() call died with the freed lobby. Also _has_started never reset (2nd game never starts).
