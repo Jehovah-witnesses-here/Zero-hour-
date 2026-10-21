@@ -39,3 +39,6 @@ Fix order (measure with T2 before AND after each):
 - Headless proves the path only (dummy renderer = 145fps, 0 draws). Real numbers need the phone.
 - Godot warns SSAO + SSIL only work on Forward+ → they never ran on Mobile; audit overstated them.
 - Batch 1 defaults: glow/auto-exposure off, shadow 50m, far 250, MSAA off, scale 0.75.
+- APK build: `godot4 --headless --path . --export-debug "Android" build/android/zero-hour.apk` (~5 min).
+  Godot can't run SDK apksigner → APK comes out UNSIGNED. Then: `zipalign -f -p 4 in out-aligned` +
+  `apksigner sign --ks ~/.android/debug.keystore --ks-pass pass:android --ks-key-alias androiddebugkey`.
